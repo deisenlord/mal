@@ -275,6 +275,19 @@ def i_equal(a, b):
         else:
             return lisp.LispBoolean(False)
 
+def castbool(x):
+    if (lisp.isBoolean(x)):
+        return x.value()
+    elif (lisp.isNil(x)):
+        return False
+    else:
+        return True
+    
+def i_or(a, b):
+    return lisp.LispBoolean(castbool(a) or castbool(b))
+
+def i_and(a, b):
+    return lisp.LispBoolean(castbool(a) and castbool(b))
 
 def i_less(a, b):
     if (lisp.isNumber(a) and lisp.isNumber(b)):
@@ -459,12 +472,13 @@ ns = {
     "*" : lisp.LispFunction(i_mult),
     "/" : lisp.LispFunction(i_div),
 
-    "="  : lisp.LispFunction(i_equal),
-    "<"  : lisp.LispFunction(i_less),
-    ">"  : lisp.LispFunction(i_greater),
-    "<=" : lisp.LispFunction(i_lessEqual),
-    ">=" : lisp.LispFunction(i_greaterEqual),
-
+    "="        : lisp.LispFunction(i_equal),
+    "<"        : lisp.LispFunction(i_less),
+    ">"        : lisp.LispFunction(i_greater),
+    "<="       : lisp.LispFunction(i_lessEqual),
+    ">="       : lisp.LispFunction(i_greaterEqual),
+    "or"       : lisp.LispFunction(i_or),
+    "and"      : lisp.LispFunction(i_and),
     "list"     : lisp.LispFunction(i_mkList),
     "count"    : lisp.LispFunction(i_count),
     "nth"      : lisp.LispFunction(i_nth),
