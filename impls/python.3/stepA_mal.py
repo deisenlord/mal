@@ -180,11 +180,9 @@ def EVAL(tree, env):
         v = eval_ast(tree, env)
         f = v.first()
         if (lisp.isFunction(f) and f.isIntrinsic()):
-            func = f.value()
-            return func(*[arg for arg in v.value()[1:]])
+            return f.fn(None, *[arg for arg in v.value()[1:]])
         else:
-            func = f
-            return func.fn(EVAL, *[arg for arg in v.value()[1:]])
+            return f.fn(EVAL, *[arg for arg in v.value()[1:]])
             
 #env = lispenv.Environments(f.outer(), f.dummys, [arg for arg in tree.value()[1:]])
 

@@ -1,0 +1,28 @@
+; bootstrap.mal - Add functionality to be loaded at runtime here.
+
+; Tracing for functions, includes recursive level
+(defmacro! trace-off (fn* [func] (list 'trace func (str func) false)))
+(defmacro! trace-on  (fn* [func] (list 'trace func (str func) true)))
+
+; Simple if with implict do, no else clause
+(defmacro! when (fn* [test & body]
+  (list 'if test (cons 'do body))))
+
+; Increment a number, list or vector
+(def! inc (fn* [x]
+    (cond
+        (list?   x)
+	    (map (fn* [y] (+ 1 y)), x)
+	    
+	(vector? x)
+	    (vec (map (fn* [y] (+ 1 y)), x))
+	  
+        (number? x)
+	    (+ 1 x)
+
+	:else
+            (throw "inc: arg0 must be list, vector or number")
+        )
+    )
+)
+

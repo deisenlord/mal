@@ -132,6 +132,17 @@ class LispNil(LispTypes):
 class LispBoolean(LispTypes):
     pass
 
+def trace_call(name, level, args):
+    for i in range(level-1):
+        print("  ", end="")
+    argstr = ",".join([printer.pr_str(x) for x in args])
+    print(("{0}: (" + name + " {1} )").format(level-1, argstr))
+
+def trace_return(name, level, ret):
+    for i in range(level-1):
+        print("  ", end="")
+    print(("{0}:" + name + " returned ({1})").format(level-1, printer.pr_str(ret)))
+    
 class LispFunction(LispTypes):
     def __init__(self, val, outer = None, bindvars = [], intrinsic = True, macro = False):
         self.val = val
@@ -140,6 +151,9 @@ class LispFunction(LispTypes):
         self.intrinsic = intrinsic
         self.isMacro = macro
         self.meta = None
+        self.trace = False
+        self.tracename = ""
+        self.tlevel = 0
         
     def isIntrinsic(self):
         return self.intrinsic
@@ -154,16 +168,22 @@ class LispFunction(LispTypes):
         return self.out
 
     def fn(self, evil, *args):
-        funcenv = lispenv.Environments(self.out, [d for d in self.dummys], [x for x in args])        
-        ret = evil(self.val, funcenv)
-        return ret
+        if (self.trace):
+            self.tlevel = self.tlevel + 1
+            trace_call(self.tracename, self.tlevel, args) 
 
-    def call(self, *args):
         if (self.intrinsic):
             f = self.val
-            return f(*[arg for arg in args])
+            ret = f(*args)
         else:
-            return fn(xxx, args)
+            funcenv = lispenv.Environments(self.out, [d for d in self.dummys], [x for x in args])        
+            ret = evil(self.val, funcenv)
+                       
+        if (self.trace):
+            trace_return(self.tracename, self.tlevel, ret)
+            self.tlevel = self.tlevel - 1
+                       
+        return ret
 
 class LispAtom(LispTypes):
     def set(self, val):

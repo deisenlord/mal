@@ -8,6 +8,17 @@ import copy
 
 # Intrinsics
 
+def i_trace(func, funcname, flag):
+
+    if (lisp.isFunction(func) and lisp.isString(funcname) and lisp.isBoolean(flag)):
+        func.trace = flag.value()
+        func.tracename = funcname.value()
+        func.tlevel = 0
+    else:
+        raise Exception("trace: trace requires (func, funcname, flag)")
+
+    return lisp.LispNil(None)
+
 def i_isList(a):
     if (lisp.isList(a)):
         return lisp.LispBoolean(True)
@@ -526,6 +537,7 @@ ns = {
     "meta"     : lisp.LispFunction(i_meta),
     "with-meta": lisp.LispFunction(i_with_meta),
     "time-ms"  : lisp.LispFunction(i_time_ms),
+    "trace"    : lisp.LispFunction(i_trace),
     "sequential?" : lisp.LispFunction(i_isSequential),
     "read-string" : lisp.LispFunction(i_readstring)
 }
