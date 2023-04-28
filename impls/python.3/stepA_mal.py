@@ -184,7 +184,7 @@ def EVAL(tree, env):
             if (lisp.isFunction(f) and f.isIntrinsic()):
                 return f.fn(None, *[arg for arg in v.value()[1:]])
             else:
-                # No TCO, how to do tracing ?
+                # No TCO, because how to do tracing ?
                 return f.fn(EVAL, *[arg for arg in v.value()[1:]])
                
 
