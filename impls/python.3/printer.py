@@ -51,7 +51,6 @@ def pr_str(tree, readable = True):
                 s = s +  ":" + k[1:]
             else:
                 s = s + '"' + k + '"'
-#            s = s + pr_str(k, readable)
             s = s + " "
             s = s + pr_str(v, readable)
             first = False

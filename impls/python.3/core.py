@@ -64,9 +64,6 @@ def i_isNumber(a):
         return lisp.LispBoolean(False)
 
 def i_mkList(*args):
-    #for i in range(len(args)):
-    #    args[i].print("py.i_mkList:arg:"+ str(i))
-        
     return lisp.LispList([arg for arg in args]) 
 
 def i_mkVector(*args):
@@ -343,10 +340,7 @@ def i_println(*args):
     return lisp.LispNil(None)
 
 def i_readstring(a):
-#    a.print("in readstring"):
     ret = reader.read_str(a.value())
-#    if (lisp.isList(ret)): print("islist")
-#    ret.print("after read_str")
     return ret
 
 def i_slurp(fname):
@@ -478,11 +472,10 @@ def i_time_ms():
         
 # Table of intrinsic built in functions
 ns = {
-    "+" : lisp.LispFunction(i_add),
-        "-" : lisp.LispFunction(i_sub),
-    "*" : lisp.LispFunction(i_mult),
-    "/" : lisp.LispFunction(i_div),
-
+    "+"        : lisp.LispFunction(i_add),
+    "-"        : lisp.LispFunction(i_sub),
+    "*"        : lisp.LispFunction(i_mult),
+    "/"        : lisp.LispFunction(i_div),
     "="        : lisp.LispFunction(i_equal),
     "<"        : lisp.LispFunction(i_less),
     ">"        : lisp.LispFunction(i_greater),

@@ -158,11 +158,11 @@ class LispFunction(LispTypes):
     def isIntrinsic(self):
         return self.intrinsic
 
+    # self.val is either a python function or a user defined function body
     def body(self):
         return self.val
-
-    def dummys(self):
-        return self.dummys
+    def func(self):
+        return self.val
 
     def outer(self):
         return self.out

@@ -14,37 +14,29 @@ sys.setrecursionlimit(5000)
 # Quoting support
 def quasiquote(tree):
     if (lisp.isList(tree) and tree.count() == 0):
-        #tree.print("empty")
         return tree
     elif (lisp.isList(tree) and tree.first().value() == "unquote"):
-        #tree.print("unquote")
         return tree.second()
     elif (lisp.isList(tree) or lisp.isVector(tree)):
         newtree = lisp.LispList([])
         for i in reversed(range(len(tree.value()))):
             el = tree.value()[i]
-            #el.print("elem[" + str(i) + "]")
             if (lisp.isList(el) and el.count() > 0 and el.first().value() ==  "splice-unquote"):
                 newtree = lisp.LispList([lisp.LispSymbol("concat"), el.second(), newtree]) 
             else:
                 newtree = lisp.LispList([lisp.LispSymbol("cons"), quasiquote(el), newtree])
         if (lisp.isVector(tree)):
             newtree = lisp.LispList([lisp.LispSymbol("vec"), newtree])
-        #newtree.print("newlist")
         return newtree
     elif (lisp.isSymbol(tree) or lisp.isHashMap(tree)):
         x = lisp.LispList([lisp.LispSymbol("quote"), tree])
-        #x.print("sym or hashmap")
         return x
     else:
-        #tree.print("default")
         return tree
 
 def is_macro_call(tree, env):
     if (lisp.isList(tree) and lisp.isSymbol(tree.first())):
-        #tree.first().print("lookup function")
         if (env.find(tree.first().value()) == None):
-            #env.dump("can't find")
             return False
         
         f = env.get(tree.first().value())
@@ -59,7 +51,6 @@ def macroexpand(tree, env):
     while(is_macro_call(tree, env)):
         f = env.get(tree.first().value())    
         tree = f.fn(EVAL, *[arg for arg in tree.value()[1:]])
-        #print("expand:", tree)
     
     return tree
 
@@ -74,117 +65,128 @@ def PRINT(tree):
 
 def EVAL(tree, env):
     #print("py(EVAL)", printer.pr_str(tree))
-    #tree.print("EVAL ")
-    if (not lisp.isList(tree)):
-        #if (lisp.isString(tree)):
-            #print("string:", tree.value())
-        ev = eval_ast(tree, env)
-        #print("ev", printer.pr_str(ev))
-        return ev
 
-    if (tree.count() == 0):
-        return tree
+    while (True):
 
-    # Macro expansion
-    #tree.print("macroexpand")
-    tree = macroexpand(tree, env)
-    #tree.print("after expand")
-    if (not lisp.isList(tree)):
-        return eval_ast(tree, env)
+        if (not lisp.isList(tree)):
+            return eval_ast(tree, env)
 
-    # Apply phase
-    arg1 = tree.first()
-    if (lisp.isSymbol(arg1) and arg1.value() == "def!"):
-        key = tree.second().value()
-        val = EVAL(tree.third(), env)
-        env.set(key, val)
-        return val
-    elif (lisp.isSymbol(arg1) and arg1.value() == "defmacro!"):
-        key = tree.second().value()
-        val = EVAL(tree.third(), env)
-        newval = val
-        if (lisp.isFunction(val)):
-            newval = copy.deepcopy(val)
-            newval.isMacro = True
-        else:
-            raise Exception("defmacro!: second argument not a function")
-        env.set(key, newval)
-        return val
-    elif (lisp.isSymbol(arg1) and arg1.value() == "macroexpand"):
-        return macroexpand(tree.second(), env)
-    elif (lisp.isSymbol(arg1) and arg1.value() == "let*"):
-        newenv = lispenv.Environments(env)
-        bindlist = tree.second()
-        if (not (lisp.isList(bindlist) or lisp.isVector(bindlist))):
-            raise Exception("let* bindlist isn't list or vector")
-        keys = bindlist.value()[::2]
-        rawvals = bindlist.value()[1::2]
-        if (len(keys) != len(rawvals)):
-            raise Exception("let* unbalanced keys and values")
-        for idx, k in enumerate(keys):
-            val = EVAL(rawvals[idx], newenv)
-            newenv.set(k.value(), val)
-        
-        return EVAL(tree.third(), newenv)
-    elif (lisp.isSymbol(arg1) and arg1.value() == "quote"): 
-        return tree.second()
-    elif (lisp.isSymbol(arg1) and arg1.value() == "quasiquote"):
-        return EVAL(quasiquote(tree.second()), env)
-    elif (lisp.isSymbol(arg1) and arg1.value() == "quasiquoteexpand"):
-        return quasiquote(tree.second())
-    elif (lisp.isSymbol(arg1) and arg1.value() == "do"):
-        ev = eval_ast(lisp.LispList(tree.rest(1)[:-1]), env)
-        return EVAL(tree.value()[-1], env)
-    elif (lisp.isSymbol(arg1) and arg1.value() == "try*"):
-        value_expr = tree.second()
-        if(tree.count() <=2):
-            tree = EVAL(value_expr, env)
-        else:
-            catch_list = tree.third()
+        if (tree.count() == 0):
+            return tree
 
-            if (not (lisp.isList(catch_list) and lisp.isSymbol(catch_list.first()) and catch_list.first().value() == "catch*")):
-                raise Exception("try*/catch*: malformed")
+        # Macro expansion
+        tree = macroexpand(tree, env)
+        if (not lisp.isList(tree)):
+            return eval_ast(tree, env)
 
-            catch_form = catch_list.third()
-            evar = catch_list.second()
-            if (not lisp.isSymbol(evar)):
-                raise Exception("try*/catch*: malformed")
+        # Apply phase
+        arg1 = tree.first()
+        if (lisp.isSymbol(arg1) and arg1.value() == "def!"):
+            key = tree.second().value()
+            val = EVAL(tree.third(), env)
+            env.set(key, val)
+            return val
+        elif (lisp.isSymbol(arg1) and arg1.value() == "defmacro!"):
+            key = tree.second().value()
+            val = EVAL(tree.third(), env)
+            newval = val
+            if (lisp.isFunction(val)):
+                newval = copy.deepcopy(val)
+                newval.isMacro = True
+            else:
+                raise Exception("defmacro!: second argument not a function")
+            env.set(key, newval)
+            return val
+        elif (lisp.isSymbol(arg1) and arg1.value() == "macroexpand"):
+            return macroexpand(tree.second(), env)
+        elif (lisp.isSymbol(arg1) and arg1.value() == "let*"):
+            newenv = lispenv.Environments(env)
+            bindlist = tree.second()
+            if (not (lisp.isList(bindlist) or lisp.isVector(bindlist))):
+                raise Exception("let* bindlist isn't list or vector")
+            keys = bindlist.value()[::2]
+            rawvals = bindlist.value()[1::2]
+            if (len(keys) != len(rawvals)):
+                raise Exception("let* unbalanced keys and values")
+            for idx, k in enumerate(keys):
+                val = EVAL(rawvals[idx], newenv)
+                newenv.set(k.value(), val)
 
-            try:
-                return EVAL(value_expr, env)
-            except Exception as e:
-                # Exception could be native to python or by i_throw(lispobject)
-                if (isinstance(e.args[0], str)):
-                    e = lisp.LispString(e.args[0])
-                elif (lisp.isLispType(e.args[0])):
-                    e = e.args[0]
-                else:
-                    e = lisp.LispString("internal error, unknown exception type")
-                cenv = lispenv.Environments(env, [evar.value()], [e])    
-                return EVAL(catch_form, cenv)
-    elif (lisp.isSymbol(arg1) and arg1.value() == "if"):
-        cond = EVAL(tree.second(), env)
-        if (not (cond.value() == None or (lisp.isBoolean(cond) and cond.value() == False))):
-            return EVAL(tree.third(), env)
-        elif (len(tree.value()) == 4):
-            # Forth list element: else clause
-            return EVAL(tree.value()[3], env)
-        else:
-            return lisp.LispNil(None)
-    elif (lisp.isSymbol(arg1) and arg1.value() == "fn*"):
-        dummys = tree.second().value()
-        body = tree.third()
-        ret = lisp.LispFunction(body, env, [b.value() for b in dummys], intrinsic = False)
-        return ret
-    else:
-        v = eval_ast(tree, env)
-        f = v.first()
-        if (lisp.isFunction(f) and f.isIntrinsic()):
-            return f.fn(None, *[arg for arg in v.value()[1:]])
-        else:
-            return f.fn(EVAL, *[arg for arg in v.value()[1:]])
+            # TCO: return EVAL(tree.third(), newenv)
+            env = newenv
+            tree = tree.third()
+        elif (lisp.isSymbol(arg1) and arg1.value() == "quote"): 
+            return tree.second()
+        elif (lisp.isSymbol(arg1) and arg1.value() == "quasiquote"):
+            # TCO: return EVAL(quasiquote(tree.second()), env)
+            tree = tree.second()
+        elif (lisp.isSymbol(arg1) and arg1.value() == "quasiquoteexpand"):
+            return quasiquote(tree.second())
+        elif (lisp.isSymbol(arg1) and arg1.value() == "do"):
+            ev = eval_ast(lisp.LispList(tree.rest(1)[:-1]), env)
             
-#env = lispenv.Environments(f.outer(), f.dummys, [arg for arg in tree.value()[1:]])
+            # TCO: return EVAL(tree.value()[-1], env)
+            tree = tree.value()[-1]
+        elif (lisp.isSymbol(arg1) and arg1.value() == "try*"):
+            value_expr = tree.second()
+            if(tree.count() <=2):
+                tree = EVAL(value_expr, env)
+            else:
+                catch_list = tree.third()
+
+                if (not (lisp.isList(catch_list) and lisp.isSymbol(catch_list.first()) and catch_list.first().value() == "catch*")):
+                    raise Exception("try*/catch*: malformed")
+
+                catch_form = catch_list.third()
+                evar = catch_list.second()
+                if (not lisp.isSymbol(evar)):
+                    raise Exception("try*/catch*: malformed")
+
+                try:
+                    return EVAL(value_expr, env)
+                except Exception as e:
+                    # Exception could be native to python or by i_throw(lispobject)
+                    if (isinstance(e.args[0], str)):
+                        e = lisp.LispString(e.args[0])
+                    elif (lisp.isLispType(e.args[0])):
+                        e = e.args[0]
+                    else:
+                        e = lisp.LispString("internal error, unknown exception type")
+                    cenv = lispenv.Environments(env, [evar.value()], [e])    
+                    return EVAL(catch_form, cenv)
+        elif (lisp.isSymbol(arg1) and arg1.value() == "if"):
+            cond = EVAL(tree.second(), env)
+            if (not (cond.value() == None or (lisp.isBoolean(cond) and cond.value() == False))):
+                # TCOL return EVAL(tree.third(), env)
+                tree = tree.third()
+            elif (len(tree.value()) == 4):
+                # TCO: return EVAL(tree.value()[3], env)
+                tree = tree.value()[3]
+            else:
+                return lisp.LispNil(None)
+        elif (lisp.isSymbol(arg1) and arg1.value() == "while"):
+            condition = tree.second()
+            body = tree.third()
+            evcond = EVAL(condition, env)
+            while (not (evcond.value() == None or (lisp.isBoolean(evcond) and evcond.value() == False))):
+                ret = EVAL(body, env)
+                evcond = EVAL(condition, env)
+
+            return ret
+        elif (lisp.isSymbol(arg1) and arg1.value() == "fn*"):
+            dummys = tree.second().value()
+            body = tree.third()
+            ret = lisp.LispFunction(body, env, [b.value() for b in dummys], intrinsic = False)
+            return ret
+        else:
+            v = eval_ast(tree, env)
+            f = v.first()
+            if (lisp.isFunction(f) and f.isIntrinsic()):
+                return f.fn(None, *[arg for arg in v.value()[1:]])
+            else:
+                # No TCO, how to do tracing ?
+                return f.fn(EVAL, *[arg for arg in v.value()[1:]])
+               
 
 def eval_ast(ast, env):
     #print("py(eval_ast)", printer.pr_str(ast))
@@ -198,7 +200,6 @@ def eval_ast(ast, env):
         evald = lisp.LispList([EVAL(e, env) for e in ast.value()])
         return evald
     elif (lisp.isVector(ast)):
-        #ast.print("eval vector")
         return lisp.LispVector([EVAL(e, env) for e in ast.value()])
     elif (lisp.isHashMap(ast)):
         newmap = {}
@@ -262,9 +263,7 @@ def i_apply(*args):
         list0.append(e)
 
     # apply function to argument list
-    #f.print("py.i_apply:arg0:")
     if (f.isIntrinsic()):
-        #print("py.i_apply:intrinsic:", f.value())
         func = f.value()        
         return func(*[a for a in list0])
     else:

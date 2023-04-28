@@ -32,9 +32,7 @@ def read_str(instr):
     tokens = tokenize(instr)
     if (len(tokens) == 0):
         raise BlankLine("BlankLine")
-    f = read_form(Readers(tokens))
-    #print("py.read_form::", printer.pr_str(f))
-    return f
+    return read_form(Readers(tokens))
 
 def read_form(rdr):
     if (rdr.peek() == '('):
