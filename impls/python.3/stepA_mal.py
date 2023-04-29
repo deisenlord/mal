@@ -182,10 +182,14 @@ def EVAL(tree, env):
             v = eval_ast(tree, env)
             f = v.first()
             if (lisp.isFunction(f) and f.isIntrinsic()):
-                return f.fn(None, *[arg for arg in v.value()[1:]])
+                func = f.value()
+                return func(*[arg for arg in v.value()[1:]])
+                #return f.fn(None, *[arg for arg in v.value()[1:]])
             else:
+                env = lispenv.Environments(f.outer(), f.dummys, [arg for arg in v.value()[1:]])
+                tree = f.body()
                 # No TCO, because how to do tracing ?
-                return f.fn(EVAL, *[arg for arg in v.value()[1:]])
+                #return f.fn(EVAL, *[arg for arg in v.value()[1:]])
                
 
 def eval_ast(ast, env):
