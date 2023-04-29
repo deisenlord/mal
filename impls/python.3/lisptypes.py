@@ -147,7 +147,7 @@ class LispFunction(LispTypes):
     def __init__(self, val, outer = None, bindvars = [], intrinsic = True, macro = False):
         self.val = val
         self.dummys = bindvars
-        self.out = outer
+        self.outer = outer
         self.intrinsic = intrinsic
         self.isMacro = macro
         self.meta = None
@@ -155,29 +155,19 @@ class LispFunction(LispTypes):
         self.tracename = ""
         self.tlevel = 0
         
-    def isIntrinsic(self):
-        return self.intrinsic
-
     # self.val is either a python function or a user defined function body
     def body(self):
         return self.val
-    def func(self):
+    def pyfunc(self):
         return self.val
 
-    def outer(self):
-        return self.out
-
-    def fn(self, evil, *args):
+    def call(self, evil, *args):
         if (self.trace):
             self.tlevel = self.tlevel + 1
             trace_call(self.tracename, self.tlevel, args) 
 
-        if (self.intrinsic):
-            f = self.val
-            ret = f(*args)
-        else:
-            funcenv = lispenv.Environments(self.out, [d for d in self.dummys], [x for x in args])        
-            ret = evil(self.val, funcenv)
+        funcenv = lispenv.Environments(self.outer, [d for d in self.dummys], [x for x in args])        
+        ret = evil(self.body(), funcenv)
                        
         if (self.trace):
             trace_return(self.tracename, self.tlevel, ret)

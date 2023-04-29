@@ -50,7 +50,7 @@ def is_macro_call(tree, env):
 def macroexpand(tree, env):
     while(is_macro_call(tree, env)):
         f = env.get(tree.first().value())    
-        tree = f.fn(EVAL, *[arg for arg in tree.value()[1:]])
+        tree = f.call(EVAL, *[arg for arg in tree.value()[1:]])
     
     return tree
 
@@ -181,13 +181,16 @@ def EVAL(tree, env):
         else:
             v = eval_ast(tree, env)
             f = v.first()
-            if (lisp.isFunction(f) and f.isIntrinsic()):
-                func = f.value()
+            if (lisp.isFunction(f) and f.intrinsic):
+                func = f.pyfunc()
                 return func(*[arg for arg in v.value()[1:]])
-                #return f.fn(None, *[arg for arg in v.value()[1:]])
             else:
-                env = lispenv.Environments(f.outer(), f.dummys, [arg for arg in v.value()[1:]])
-                tree = f.body()
+                if (f.trace):   # No TCO if tracing
+                    return f.call(EVAL, *[arg for arg in v.value()[1:]])
+                else:
+                    # TCO
+                    env = lispenv.Environments(f.outer, f.dummys, [arg for arg in v.value()[1:]])
+                    tree = f.body()
                 # No TCO, because how to do tracing ?
                 #return f.fn(EVAL, *[arg for arg in v.value()[1:]])
                
@@ -237,11 +240,11 @@ def i_swap(*args):
     for a in args[2:]:
         arglist.append(a)
 
-    if (func.isIntrinsic()):
+    if (func.intrinsic):
         atom.set(func.value()(*arglist))
         return atom.value()
     else:
-        env = lispenv.Environments(func.outer(), func.dummys, arglist)
+        env = lispenv.Environments(func.outer, func.dummys, arglist)
         atom.set(evil(func.body(), env))
         return atom.value()
 
@@ -267,11 +270,11 @@ def i_apply(*args):
         list0.append(e)
 
     # apply function to argument list
-    if (f.isIntrinsic()):
+    if (f.intrinsic):
         func = f.value()        
         return func(*[a for a in list0])
     else:
-        newenv = lispenv.Environments(f.outer(), f.dummys, [a for a in list0])
+        newenv = lispenv.Environments(f.outer, f.dummys, [a for a in list0])
         return evil(f.body(), newenv)
 
 def i_map(*args):
@@ -284,13 +287,13 @@ def i_map(*args):
     inputs = args[1]
 
     outputs = []
-    if (f.isIntrinsic()):
+    if (f.intrinsic):
         func = f.value()
         for a in inputs.value():
             outputs.append(func(a))
     else:
         for a in inputs.value():
-            newenv = lispenv.Environments(f.outer(), f.dummys, [a])
+            newenv = lispenv.Environments(f.outer, f.dummys, [a])
             outputs.append(evil(f.body(), newenv))
 
     return lisp.LispList(outputs)
