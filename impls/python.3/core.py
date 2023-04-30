@@ -5,8 +5,15 @@ import printer
 import lisptypes as lisp
 import lisp_input
 import copy
+import os.path
 
 # Intrinsics
+
+def i_fileExists(path):
+    if (lisp.isString(path)):
+        return lisp.LispBoolean(os.path.isfile(path.value()))
+    else:
+        raise Exception("fileexists?: arg0 jmust be string")
 
 def i_trace(func, funcname, flag):
 
@@ -547,6 +554,7 @@ ns = {
     "trace"    : lisp.LispFunction(i_trace),
     "pydo!"    : lisp.LispFunction(i_pyDo),
     "pyget!"   : lisp.LispFunction(i_pyGet),
+    "fileexists?" : lisp.LispFunction(i_fileExists),
     "sequential?" : lisp.LispFunction(i_isSequential),
     "read-string" : lisp.LispFunction(i_readstring)
 }
