@@ -19,6 +19,20 @@ def i_trace(func, funcname, flag):
 
     return lisp.LispNil(None)
 
+def i_pyDo(str):
+    if (lisp.isString(str)):
+        exec(compile(str.value(), "code", "exec"), globals())
+    else:
+        raise Exception("pydo!: arg0 must be string")
+
+    return lisp.LispNil(None)
+
+def i_pyGet(str):
+    if (lisp.isString(str)):
+        return lisp.Py2Lisp(eval(str.value()))
+    else:
+        raise Exception("pyget!: arg0 must be string")
+    
 def i_isList(a):
     if (lisp.isList(a)):
         return lisp.LispBoolean(True)
@@ -531,6 +545,8 @@ ns = {
     "with-meta": lisp.LispFunction(i_with_meta),
     "time-ms"  : lisp.LispFunction(i_time_ms),
     "trace"    : lisp.LispFunction(i_trace),
+    "pydo!"    : lisp.LispFunction(i_pyDo),
+    "pyget!"   : lisp.LispFunction(i_pyGet),
     "sequential?" : lisp.LispFunction(i_isSequential),
     "read-string" : lisp.LispFunction(i_readstring)
 }

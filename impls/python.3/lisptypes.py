@@ -179,4 +179,23 @@ class LispAtom(LispTypes):
     def set(self, val):
         self.val = val
 
-
+# Python type to MAL type
+def Py2Lisp(pyobj):
+    if (type(pyobj) == list):
+        l = [Py2Lisp(o) for o in pyobj]
+        return LispList(l)
+    elif (type(pyobj) == tuple):
+        return Py2Lisp(list(pyobj))
+    elif (type(pyobj) == dict):
+        hm = {}
+        for k in pyobj.keys():
+            hm[k] = Py2Lisp(pyobj[k])
+        return LispHashMap(hm)
+    elif (type(pyobj) == int):
+        return LispNumber(pyobj)
+    elif (type(pyobj) == str):
+        return LispString(pyobj)
+    elif (type(pobj) == None):
+        return LispNil(None)
+    else:
+        raise Exception("pyget! : Unsupported python type " + str(type(pyobj)))
