@@ -4,6 +4,7 @@ UNIKORN = "\u029e"
 
 import env as lispenv
 import printer
+import time
 
 class LispTypes:
     def __init__(self, val):
@@ -195,7 +196,11 @@ def Py2Lisp(pyobj):
         return LispNumber(pyobj)
     elif (type(pyobj) == str):
         return LispString(pyobj)
-    elif (type(pobj) == None):
+    elif (type(pyobj) == type(None)):
         return LispNil(None)
+    elif (type(pyobj) == bool):
+        return LispBoolean(pyobj)
+    elif (type(pyobj) == time.struct_time):
+        return LispNumber(time.mktime(pyobj))
     else:
         raise Exception("pyget! : Unsupported python type " + str(type(pyobj)))

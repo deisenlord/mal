@@ -1,0 +1,19 @@
+; f1.mal - Hash map of RSS sites to process
+
+(load-file "news.mal")
+
+(def! rssfeeds {
+      "90 MIN"        "https://www.90min.com/posts.rss"
+      "LA LIGA"       "https://laligaexpert.com/feed/"
+      "TRIBAL"        "https://sportspyder.com/rss/sources/21903/articles"
+      "ATHLETIC"      "https://theathletic.com/tag/premier-league?rss"
+      "ESPN UK"       "https://www.espn.co.uk/espn/rss/football/news"
+      "FOOTBALL TALK" "https://football-talk.co.uk/topics/premier-league/feed/"
+      "ESPN"          "https://www.espn.com/espn/rss/soccer/news"
+      "YAHOO"         "https://sports.yahoo.com/soccer/mls/rss/"
+      }
+)
+(map feed-print (html-header html-email-header))
+(map feed-print (html-body (feed-process-list rssfeeds)))
+
+

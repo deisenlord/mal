@@ -8,6 +8,7 @@
 (defmacro! when (fn* [test & body]
   (list 'if test (cons 'do body))))
 
+
 ; Increment a number, list or vector
 (def! inc (fn* [x]
     (cond
@@ -26,3 +27,17 @@
     )
 )
 
+(def! reduce (fn* [f init xs]
+      (if (empty? xs)
+          init
+
+	  (reduce f (f init (first xs)) (rest xs))
+      )    
+))
+
+(def! join (fn* [sep alist]
+    (cond
+	(empty? alist)  ""
+        "else"          (str (first alist) (if (= (count alist) 1) "" sep) (join sep (rest alist)))
+    )
+))

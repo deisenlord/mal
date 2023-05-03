@@ -1,0 +1,52 @@
+; py.feedreader.mal
+;
+; Read RSS feed by calling python feedreader package
+
+   
+; Generate python code to read given RSS url.
+;
+(def! feed-pycode (fn* [url]
+(str
+"import feedparser
+def encode_feedparser_dict(d):
+  if isinstance(d, feedparser.FeedParserDict) or isinstance(d, dict):
+    j = {}
+    for k in d.keys():
+      j[k] = encode_feedparser_dict(d[k])
+    return j
+  elif isinstance(d, list):
+    l = []
+    for k in d:
+      l.append(encode_feedparser_dict(k))
+    return l
+  else:
+    return d
+
+NewsFeed = feedparser.parse(\"" url "\")
+allitems = []
+for i in range(1, len(NewsFeed)+1):
+    allitems.append(encode_feedparser_dict(NewsFeed.entries[i]))
+"
+)
+))
+
+
+; Read RSS feed, returns list of hash maps, one for each entry in feed
+;
+(def! feed-read (fn* [url]
+        (try*
+	  (do
+	    (pydo! (feed-pycode url))
+	    (pyget! "allitems")
+	  )
+        (catch* err (pyget! "allitems")))
+))
+
+
+
+
+
+
+
+
+

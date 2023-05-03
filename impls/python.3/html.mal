@@ -1,0 +1,53 @@
+; html.mal - Generate html
+;
+; Each function generates a vector of html lines
+;
+; DJE
+
+
+(def! html-email-header [
+  "<!DOCTYPE html PUBLIC “-//W3C//DTD XHTML 1.0 Transitional//EN” “https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd”>"
+  "<html xmlns=“https://www.w3.org/1999/xhtml”>"
+  "<head>"
+  "<meta http–equiv=“Content-Type” content=“text/html; charset=UTF-8” />"
+  "<meta http–equiv=“X-UA-Compatible” content=“IE=edge” />"
+  "</head>"
+])
+
+; Header given html standard url and vector of custom header lines (css, etc)
+(def! html-header (fn* [headlist]
+    (let* [lines []]
+        (do
+	    (def! lines (concat lines headlist))
+	)
+    )
+))
+
+; Body tags with vector of body lines inserted
+(def! html-body (fn* [bodylines]
+    (let* [lines []]
+        (do
+	    (def! lines (concat lines "<body>"))
+	    (def! lines (concat lines bodylines))
+	    (def! lines (concat lines "</body>"))
+	)
+    )
+))
+
+; H1 header
+(def! html-h1 (fn* [headtext]
+    [(str "<h1>" headtext "</h1>")]
+))
+
+; H2 header
+(def! html-h2 (fn* [headtext]
+    [(str "<h2>" headtext "</h2>")]
+))
+
+; <A> hyperlink
+(def! html-link (fn* [text ref]
+    [(str "<a href=\"" ref "\">" text "</a>")]
+))
+
+; Break tag
+(def! html-break (fn* [] [(str "</br>")]) "")

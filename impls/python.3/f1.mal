@@ -1,0 +1,16 @@
+; f1.mal - Hash map of F1 RSS sites to process
+
+(load-file "news.mal")
+
+(def! rssfeeds {
+      "AUTOSPORT"     "https://www.autosport.com/rss/f1/news"
+      "BBC"           "https://feeds.bbci.co.uk/sport/formula1/rss.xml"
+      "FORMULA1"      "https://www.formula1.com/content/fom-website/en/latest/all.xml"
+      "CRASH.NET"     "https://www.crash.net/rss/f1"
+      "FIA"           "https://www.fia.com/rss/press-release"
+      }
+)
+(map feed-print (html-header html-email-header))
+(map feed-print (html-body (feed-process-list rssfeeds)))
+
+
