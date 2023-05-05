@@ -12,6 +12,16 @@
     (first (rest lst))
 ))
 
+(def! notempty? (fn* [lst]
+    (not (empty? lst))
+))
+
+(def! noteq (fn* [a b]
+    (not (= a b))
+))
+
+(def! eq =)
+
 ; Increment a number, list or vector
 (def! inc (fn* [x]
     (cond
