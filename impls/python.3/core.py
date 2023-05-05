@@ -369,6 +369,11 @@ def i_slurp(fname):
         str = file.read()
     return lisp.LispString(str)
 
+def i_spit(fname, s):
+    with open(fname.value(), "w") as file:
+        n = file.write(s.value())
+    return lisp.LispNumber(n)
+
 def i_atom(val):
     return lisp.LispAtom(val)
 
@@ -535,6 +540,7 @@ ns = {
     "cons"     : lisp.LispFunction(i_cons),
     "concat"   : lisp.LispFunction(i_concat),
     "slurp"    : lisp.LispFunction(i_slurp),
+    "spit"     : lisp.LispFunction(i_spit),
     "symbol"   : lisp.LispFunction(i_mkSymbol),
     "keyword"  : lisp.LispFunction(i_mkKeyword),
     "vector"   : lisp.LispFunction(i_mkVector),
