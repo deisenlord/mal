@@ -322,7 +322,7 @@ EVAL(READ('(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\n
 EVAL(READ("(defmacro! cond (fn* (& xs) (if (> (count xs) 0) (list 'if (first xs) (if (> (count xs) 1) (nth xs 1) (throw \"odd number of forms to cond\")) (cons 'cond (rest (rest xs)))))))"), repl_env)
 
 # Additional bootstrap lisp code
-EVAL(READ('(if (fileexists? "bootstrap.mal") (load-file "bootstrap.mal"))'), repl_env)
+EVAL(READ('(if (fileexists? "/usr/local/lib/mal/bootstrap.mal") (load-file "/usr/local/lib//mal/bootstrap.mal"))'), repl_env)
 
 # Yahoo...
 
@@ -339,7 +339,7 @@ if (len(sys.argv) > 1):
         rep("(load-file \"{0}\")".format(fname), repl_env)
         sys.exit(0)
     except Exception as e:
-        print("".join(traceback.format_exception(*sys.exc_info())))
+        print(*sys.exc_info())
 else:
     rep('(println (str "Mal [" *host-language* "]"))', repl_env)
     while (True):
@@ -354,7 +354,7 @@ else:
         except reader.BlankLine: 
             continue
         except Exception as e:
-            print("".join(traceback.format_exception(*sys.exc_info())))
+            print(*sys.exc_info())
 
 
 

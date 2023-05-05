@@ -8,6 +8,9 @@
 (defmacro! when (fn* [test & body]
   (list 'if test (cons 'do body))))
 
+(def! second (fn* [lst]
+    (first (rest lst))
+))
 
 ; Increment a number, list or vector
 (def! inc (fn* [x]
@@ -26,6 +29,23 @@
         )
     )
 )
+; ditto decrement
+(def! dec (fn* [x]
+    (cond
+        (list?   x)
+	    (map (fn* [y] (- 1 y)), x)
+	    
+	(vector? x)
+	    (vec (map (fn* [y] (- 1 y)), x))
+	  
+        (number? x)
+	    (- 1 x)
+
+	:else
+            (throw "dec: arg0 must be list, vector or number")
+        )
+    )
+)
 
 (def! reduce (fn* [f init xs]
       (if (empty? xs)
@@ -35,9 +55,11 @@
       )    
 ))
 
+; Join a lists members as strings with given seperators
 (def! join (fn* [sep alist]
     (cond
 	(empty? alist)  ""
         "else"          (str (first alist) (if (= (count alist) 1) "" sep) (join sep (rest alist)))
     )
-))
+)
+)

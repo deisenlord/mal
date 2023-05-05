@@ -1,5 +1,5 @@
 SOURCES_BASE = lisptypes.py reader.py printer.py lisp_input.py
-SOURCES_LISP = env.py core.py stepA_mal.py bootstrap.mal
+SOURCES_LISP = env.py core.py stepA_mal.py
 SOURCES = $(SOURCES_BASE) $(SOURCES_LISP)
 
 all:

@@ -81,12 +81,12 @@ def read_hashmap(rdr):
 def read_list_type(rdr, start, end):
     types = []
     tok = rdr.next()
-    if (tok != start): raise Exception("mal: expected '" + start + "'")
+    if (tok != start): raise Exception("mal: expected starting '" + start + "'")
 
     tok = rdr.peek()
     while (tok != end):
         if (not tok):
-            raise Exception("mal: expected" + end + "got EOF")
+            raise Exception("mal: expected ending '" + end + "' got EOF")
         form = read_form(rdr)
         types.append(form)
         tok = rdr.peek()
@@ -101,16 +101,16 @@ def read_list_type(rdr, start, end):
         keys = types[::2]
         values = types[1::2]
         if (len(keys) != len(values)):
-            raise Exception("unbalanced keys and values")
+            raise Exception("mal: Hashmap unbalanced keys and values")
         for k in keys:
             if (not isinstance(k, lisp.LispString)):
-                raise Exception("Hash map keys cannot only be strings or :keywords")
+                raise Exception("mal: Hash map keys can only be strings or :keywords")
         for idx, k in enumerate(keys):
             dict[k.value()] = values[idx]
         
         return lisp.LispHashMap(dict)
     else:
-        raise Exception("Impossible list type:", start)
+        raise Exception("mal: Unkown list starting type: ", start)
 
 def unescape(s):
     return s.replace('\\\\', '\u029e').replace('\\"', '"').replace('\\n', '\n').replace('\u029e', '\\')
@@ -136,7 +136,7 @@ def read_atom(rdr):
     elif (str_re.match(tok)):
         val = lisp.LispString(unescape(tok[1:-1])) 
     elif (tok[0] == '"'):
-        raise Exception("unbalanced quotes")
+        raise Exception("mal: unbalanced quotes")
     elif (tok[0] == ':'):
         val = lisp.LispString(lisp.UNIKORN + tok[1:])
     else:
