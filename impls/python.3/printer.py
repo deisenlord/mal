@@ -24,7 +24,7 @@ def pr_str(tree, readable = True):
         else:
             return tree.value()
     elif (isinstance(tree, lisp.LispList)):
-        s = "("
+        s = "(list "
         first = True
         for elem in tree.value():
             if (not first):

@@ -339,7 +339,7 @@ if (len(sys.argv) > 1):
         rep("(load-file \"{0}\")".format(fname), repl_env)
         sys.exit(0)
     except Exception as e:
-        print(*sys.exc_info())
+        print(sys.exc_info())
 else:
     rep('(println (str "Mal [" *host-language* "]"))', repl_env)
     while (True):
@@ -354,7 +354,7 @@ else:
         except reader.BlankLine: 
             continue
         except Exception as e:
-            print(*sys.exc_info())
+            print(sys.exc_info())
 
 
 

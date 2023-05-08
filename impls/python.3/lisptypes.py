@@ -13,7 +13,7 @@ class LispTypes:
         
     def value(self):
         return self.val
-    def print(self, tag):
+    def print(self,  tag):
         print(tag + ": " + printer.pr_str(self))
     def __str__(self):
         return printer.pr_str(self)
@@ -192,7 +192,9 @@ def Py2Lisp(pyobj):
         for k in pyobj.keys():
             hm[k] = Py2Lisp(pyobj[k])
         return LispHashMap(hm)
-    elif (type(pyobj) == int):
+    elif (type(pyobj) == int or type(pyobj) == float):
+        if (type(pyobj) == float):
+            pyobj = int(float)
         return LispNumber(pyobj)
     elif (type(pyobj) == str):
         return LispString(pyobj)

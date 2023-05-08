@@ -14,7 +14,7 @@ mal.pyz: $(SOURCES)
 	rm __main__.py
 
 mal: mal.pyz
-	echo '#!/usr/bin/env python' > $@
+	echo '#!/usr/bin/env python3' > $@
 	cat $< >> $@
 	chmod +x $@
 

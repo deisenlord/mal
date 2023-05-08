@@ -119,6 +119,7 @@ def read_atom(rdr):
     val = None
     int_re = re.compile(r"-?[0-9]+$")
     str_re = re.compile(r'"(?:[\\].|[^\\"])*"')
+    float_re = re.compile(r"-?[0-9][0-9.]*$")
 
     tok = rdr.next()
     
@@ -126,6 +127,9 @@ def read_atom(rdr):
         return None
     elif (int_re.match(tok)):
         num = int(tok)
+        val = lisp.LispNumber(num)
+    elif (float_re.match(tok)):
+        num = int(float(tok))
         val = lisp.LispNumber(num)
     elif (tok == "nil"):
         val = lisp.LispNil(None)

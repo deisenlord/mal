@@ -558,8 +558,8 @@ ns = {
     "with-meta": lisp.LispFunction(i_with_meta),
     "time-ms"  : lisp.LispFunction(i_time_ms),
     "trace"    : lisp.LispFunction(i_trace),
-    "pydo!"    : lisp.LispFunction(i_pyDo),
-    "pyget!"   : lisp.LispFunction(i_pyGet),
+    "pyblock!" : lisp.LispFunction(i_pyDo),
+    "pyexpr!"  : lisp.LispFunction(i_pyGet),
     "fileexists?" : lisp.LispFunction(i_fileExists),
     "sequential?" : lisp.LispFunction(i_isSequential),
     "read-string" : lisp.LispFunction(i_readstring)
