@@ -61,7 +61,7 @@ def READ(instr):
     return reader.read_str(instr)
 
 def PRINT(tree):
-    return printer.pr_str(tree)
+    return printer.pr_str(tree, False)
 
 def EVAL(tree, env):
     #print("py(EVAL)", printer.pr_str(tree))
@@ -118,8 +118,8 @@ def EVAL(tree, env):
         elif (lisp.isSymbol(arg1) and arg1.value() == "quote"): 
             return tree.second()
         elif (lisp.isSymbol(arg1) and arg1.value() == "quasiquote"):
-            # TCO: return EVAL(quasiquote(tree.second()), env)
-            tree = tree.second()
+            return EVAL(quasiquote(tree.second()), env)
+            #tree = tree.second()
         elif (lisp.isSymbol(arg1) and arg1.value() == "quasiquoteexpand"):
             return quasiquote(tree.second())
         elif (lisp.isSymbol(arg1) and arg1.value() == "do"):

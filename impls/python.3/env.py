@@ -36,7 +36,7 @@ class Environments:
 		if (ev != None):
 			return ev._get(key)
 		else:
-			raise Exception("'{0}' not found".format(key)) 
+			raise Exception("mal: symbol '{0}' not found".format(key)) 
 
 	def dump(self, tag):
 		print(tag + ":")

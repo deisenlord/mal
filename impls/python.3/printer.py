@@ -24,7 +24,10 @@ def pr_str(tree, readable = True):
         else:
             return tree.value()
     elif (isinstance(tree, lisp.LispList)):
-        s = "(list "
+        if (readable):
+            s = "(list "
+        else:
+            s = "("
         first = True
         for elem in tree.value():
             if (not first):
@@ -56,7 +59,7 @@ def pr_str(tree, readable = True):
             first = False
         return s + "}"
     elif (lisp.isFunction(tree)):
-        return str(tree.value())
+        return pr_str(tree.value(), False)
     elif (lisp.isAtom(tree)):
         return "(atom " + pr_str(tree.value()) + ")"
     else:
