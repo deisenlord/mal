@@ -458,8 +458,8 @@ def i_vector(v):
     else:
         raise Exception("vec: arg0 not list like")
 
-def i_throw(v):
-    raise Exception(v.value())
+def i_throw(obj):
+    raise lisp.LispException(obj)
 
 def i_readline(prompt):
     if (not lisp.isString(prompt)):

@@ -24,10 +24,10 @@ def pr_str(tree, readable = True):
         else:
             return tree.value()
     elif (isinstance(tree, lisp.LispList)):
-        if (readable):
-            s = "(list "
-        else:
-            s = "("
+#        if (readable):
+##            s = "(list "
+#        else:
+        s = "("
         first = True
         for elem in tree.value():
             if (not first):

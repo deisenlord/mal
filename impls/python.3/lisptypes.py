@@ -6,6 +6,10 @@ import env as lispenv
 import printer
 import time
 
+class LispException(Exception):
+    def __init__(self, object):
+        self.malobject = object
+    
 class LispTypes:
     def __init__(self, val):
         self.val = val

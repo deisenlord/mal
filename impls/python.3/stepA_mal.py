@@ -61,7 +61,7 @@ def READ(instr):
     return reader.read_str(instr)
 
 def PRINT(tree):
-    return printer.pr_str(tree, False)
+    return printer.pr_str(tree)
 
 def EVAL(tree, env):
     #print("py(EVAL)", printer.pr_str(tree))
@@ -135,12 +135,12 @@ def EVAL(tree, env):
                 catch_list = tree.third()
 
                 if (not (lisp.isList(catch_list) and lisp.isSymbol(catch_list.first()) and catch_list.first().value() == "catch*")):
-                    raise Exception("try*/catch*: malformed")
+                    raise Exception("mal: try*/catch*: malformed")
 
                 catch_form = catch_list.third()
                 evar = catch_list.second()
                 if (not lisp.isSymbol(evar)):
-                    raise Exception("try*/catch*: malformed")
+                    raise Exception("mal: try*/catch*: malformed")
 
                 try:
                     return EVAL(value_expr, env)
@@ -148,10 +148,12 @@ def EVAL(tree, env):
                     # Exception could be native to python or by i_throw(lispobject)
                     if (isinstance(e.args[0], str)):
                         e = lisp.LispString(e.args[0])
+                    elif (isinstance(e.args[0], lisp.LispException)):
+                        e = e.args[0].malobject
                     elif (lisp.isLispType(e.args[0])):
                         e = e.args[0]
                     else:
-                        e = lisp.LispString("internal error, unknown exception type")
+                        e = lisp.LispString("mal: Internal error, unknown exception type")
                     cenv = lispenv.Environments(env, [evar.value()], [e])    
                     return EVAL(catch_form, cenv)
         elif (lisp.isSymbol(arg1) and arg1.value() == "if"):
@@ -339,7 +341,10 @@ if (len(sys.argv) > 1):
         rep("(load-file \"{0}\")".format(fname), repl_env)
         sys.exit(0)
     except Exception as e:
-        print(sys.exc_info())
+        if (isinstance(e, lisp.LispException)):
+            print("Exception: " + printer.pr_str(e.malobject))
+        else:
+            print(sys.exc_info())
 else:
     rep('(println (str "Mal [" *host-language* "]"))', repl_env)
     while (True):
@@ -354,7 +359,10 @@ else:
         except reader.BlankLine: 
             continue
         except Exception as e:
-            print(sys.exc_info())
+            if (isinstance(e, lisp.LispException)):
+                print("Exception: " + printer.pr_str(e.malobject))
+            else:
+                print(sys.exc_info())
 
 
 
