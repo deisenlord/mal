@@ -245,22 +245,36 @@ def i_seq(a):
         return lisp.LispList([lisp.LispString(e) for e in a.value()])
 
 def i_conj(*args):
-    if (not lisp.isListLike(args[0])):
-        raise Exception("conj arg0 must be a list")
+    if (lisp.isListLike(args[0])):
+        list = args[0].value().copy()
 
-    list = args[0].value().copy()
+        rest = args[1:]
 
-    rest = args[1:]
+        if (lisp.isVector(args[0])):
+            for e in rest:
+                list.append(e)
+            return lisp.LispVector(list)
+        else:
+            for e in rest:
+                list.insert(0, e)
+            return lisp.LispList(list)
+   
+    elif (lisp.isHashMap(args[0])):
+        map = args[0].value().copy()
 
-    if (lisp.isVector(args[0])):
-        for e in rest:
-            list.append(e)
-        return lisp.LispVector(list)
+        rest = args[1:]
+
+        for m in rest:
+            if (not lisp.isHashMap(m)):
+                raise Exception("conj: can only conj maps to maps")
+            for k in m.value().keys():
+                map[k] = m.value()[k]
+
+        return lisp.LispHashMap(map)
+ 
     else:
-        for e in rest:
-            list.insert(0, e)
-        return lisp.LispList(list)
-    return   
+        raise Exception("conj: arg0 must be list, vector or hash-map")
+
 
 def i_add(a, b):
     return lisp.LispNumber(a.value() + b.value())
