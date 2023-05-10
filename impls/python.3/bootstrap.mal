@@ -71,5 +71,36 @@
 	(empty? alist)  ""
         "else"          (str (first alist) (if (= (count alist) 1) "" sep) (join sep (rest alist)))
     )
-)
-)
+))
+
+; serialization.mal - Serialize and deserialize data structures
+
+; Add a variables/objects serialized value to a map for writing to a file
+(defmacro! serialize-add (fn* [container obj objname] 
+    (list 'assoc container objname (list 'str "'" (list 'pr-str obj)))
+))
+
+; Write a collection of serialized variables to a file
+(def! serialize-write (fn* [path container]
+    (spit path (pr-str container))
+))
+
+; Read a collection of serialized variables from a file, use -realize to restore individual values
+(def! serialize-read (fn* [path]
+    (if (fileexists? path)
+        (eval (read-string (slurp path)))
+
+        (throw (str "serialize-read: no such file '" path "'"))
+    )
+))
+
+; Return the value of a serialized variable
+(def! serialize-realize (fn* [container varname]
+    (if (contains? container varname)
+        (eval (read-string (get container varname)))
+    
+        (throw (str "serialize-realize: no such variable '" varname "' in container"))
+    )
+))
+
+      
