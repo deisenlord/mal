@@ -186,7 +186,7 @@ def EVAL(tree, env):
             if (lisp.isFunction(f) and f.intrinsic):
                 func = f.pyfunc()
                 return func(*[arg for arg in v.value()[1:]])
-            else:
+            elif (lisp.isFunction(f)):
                 if (f.trace):   # No TCO if tracing
                     return f.call(EVAL, *[arg for arg in v.value()[1:]])
                 else:
@@ -195,14 +195,15 @@ def EVAL(tree, env):
                     tree = f.body()
                 # No TCO, because how to do tracing ?
                 #return f.fn(EVAL, *[arg for arg in v.value()[1:]])
-               
+            else:
+                raise Exception("mal: Expected function, got '" + printer.pr_str(f) + "'")
 
 def eval_ast(ast, env):
     #print("py(eval_ast)", printer.pr_str(ast))
     if (lisp.isSymbol(ast)):
         val = env.get(ast.value())
         if (val is None):
-            raise Exception("Cannot resolve: " + ast.value())
+            raise Exception("mal: Cannot resolve: " + ast.value())
         else:
             return val
     elif (lisp.isList(ast)):
@@ -342,9 +343,9 @@ if (len(sys.argv) > 1):
         sys.exit(0)
     except Exception as e:
         if (isinstance(e, lisp.LispException)):
-            print("Exception: " + printer.pr_str(e.malobject))
+            print(printer.pr_str(e.malobject))
         else:
-            print(sys.exc_info())
+            print(e.args[0])
 else:
     rep('(println (str "Mal [" *host-language* "]"))', repl_env)
     while (True):
@@ -360,9 +361,9 @@ else:
             continue
         except Exception as e:
             if (isinstance(e, lisp.LispException)):
-                print("Exception: " + printer.pr_str(e.malobject))
+                print(printer.pr_str(e.malobject))
             else:
-                print(sys.exc_info())
+                print(e.args[0])
 
 
 
