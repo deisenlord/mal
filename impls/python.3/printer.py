@@ -60,5 +60,5 @@ def pr_str(tree, readable = True):
     elif (lisp.isAtom(tree)):
         return "(atom " + pr_str(tree.value()) + ")"
     else:
-        return str(tree.value()) # ??? error 
+        return str(tree) # ??? error 
 
