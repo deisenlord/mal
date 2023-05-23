@@ -1,5 +1,15 @@
 ; bootstrap.mal - Add functionality to be loaded at runtime here.
 
+; Load namespace
+(defmacro! require (fn* [ns & options]
+    (let* [opt  (apply hash-map options)]
+        (do
+            (eval (read-string (str "(do " (slurp (str ns ".mal")) "\nnil)")))
+            nil
+        )
+    )
+))
+
 ; Tracing for functions, includes recursive level
 (defmacro! trace-off (fn* [func] (list 'trace func (str func) false)))
 (defmacro! trace-on  (fn* [func] (list 'trace func (str func) true)))

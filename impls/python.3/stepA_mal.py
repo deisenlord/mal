@@ -63,6 +63,20 @@ def READ(instr):
 def PRINT(tree):
     return printer.pr_str(tree)
 
+def nsfixup(body, env):
+    if (env.getns() == 'user'): 
+        return
+
+    if (lisp.isSymbol(body)):
+        body.setvalue(env.qualify(body.value()))
+        return
+
+    for e in body.value():
+        if (lisp.isSymbol(e) and env.find(env.qualify(e.value())) != None):
+            e.setvalue(env.qualify(e.value()))
+        elif (lisp.isList(e)):
+            nsfixup(e, env)
+
 def EVAL(tree, env):
     #print("py(EVAL)", printer.pr_str(tree))
 
@@ -84,8 +98,18 @@ def EVAL(tree, env):
         if (lisp.isSymbol(arg1) and arg1.value() == "def!"):
             key = tree.second().value()
             val = EVAL(tree.third(), env)
-            env.set(key, val)
+            env.set(env.qualify(key), val)
             return val
+        elif (lisp.isSymbol(arg1) and arg1.value() == "ns"):
+            ns = tree.second()
+            if (lisp.isSymbol(ns)):
+                nsenv = lispenv.Environments(env)
+                nsenv.setns(ns.value())
+                ev = eval_ast(lisp.LispList(tree.rest(2)), nsenv)
+                env.nsinstall(nsenv)
+                return lisp.LispNil(None)
+            else:
+                raise Exception("ns: arg0 must be a symbol")       
         elif (lisp.isSymbol(arg1) and arg1.value() == "defmacro!"):
             key = tree.second().value()
             val = EVAL(tree.third(), env)
@@ -95,7 +119,7 @@ def EVAL(tree, env):
                 newval.isMacro = True
             else:
                 raise Exception("defmacro!: second argument not a function")
-            env.set(key, newval)
+            env.set(env.qualify(key), newval)
             return val
         elif (lisp.isSymbol(arg1) and arg1.value() == "macroexpand"):
             return macroexpand(tree.second(), env)
@@ -178,6 +202,9 @@ def EVAL(tree, env):
         elif (lisp.isSymbol(arg1) and arg1.value() == "fn*"):
             dummys = tree.second().value()
             body = tree.third()
+            if (env.getns() != 'user'):
+                nsfixup(body, env)
+                env = env.outer
             ret = lisp.LispFunction(body, env, [b.value() for b in dummys], intrinsic = False)
             return ret
         else:
@@ -196,7 +223,7 @@ def EVAL(tree, env):
                 # No TCO, because how to do tracing ?
                 #return f.fn(EVAL, *[arg for arg in v.value()[1:]])
             else:
-                raise Exception("mal: Expected function, got '" + printer.pr_str(f) + "'")
+                raise Exception("mal:: Expected function, got '" + printer.pr_str(f) + "'")
 
 def eval_ast(ast, env):
     #print("py(eval_ast)", printer.pr_str(ast))
@@ -226,7 +253,9 @@ def rep(instr, env):
 
 # Root environment
 repl_env = lispenv.Environments(None)
+repl_env.setns("user")
 
+#
 # Lisp intrinsics requiring EVAL, otherwise would be in core.py
 def evil(tree, env):
     return EVAL(tree, env)
@@ -304,20 +333,28 @@ def i_map(*args):
 def i_quasiquote(tree):
     return quasiquote(tree.second())
 
+def i_printenv():
+    repl_env.dump()
+    return lisp.LispNil(None)
+
 # Add evil and swap to envronment
-repl_env.set("eval",  lisp.LispFunction(lambda tree: evil(tree, repl_env)))
-repl_env.set("swap!", lisp.LispFunction(i_swap))
+repl_env.set("eval",      lisp.LispFunction(lambda tree: evil(tree, repl_env)))
+repl_env.set("swap!",     lisp.LispFunction(i_swap))
 repl_env.set("quasiquoteexpand", lisp.LispFunction(i_quasiquote))
-repl_env.set("apply", lisp.LispFunction(i_apply))
-repl_env.set("map", lisp.LispFunction(i_map))
+repl_env.set("apply",     lisp.LispFunction(i_apply))
+repl_env.set("map",       lisp.LispFunction(i_map))
+
+# Namespace, env
+repl_env.set("print-env", lisp.LispFunction(i_printenv))
                                   
 # Built in intrinsic functions
 for funcsym in core.ns:
     repl_env.set(funcsym, core.ns[funcsym])
 
-# *ARGV*
+# Built-in variables*
 repl_env.set("*ARGV*", lisp.LispList([]))
 repl_env.set("*host-language*", lisp.LispString("python3 DJE 4/20/2023"))
+repl_env.set("*ns*", lisp.LispHashMap({}))
 
 # Built in user defined functions 
 EVAL(READ("(def! not (fn* (a) (if a false true)))"), repl_env)
@@ -350,7 +387,7 @@ else:
     rep('(println (str "Mal [" *host-language* "]"))', repl_env)
     while (True):
         try:
-            instr = lisp_input.readline("user> ")
+            instr = lisp_input.readline(repl_env.getns() + "> ")
             if (instr == ""):
                 continue
             if (instr == None):

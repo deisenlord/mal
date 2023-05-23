@@ -126,7 +126,8 @@ class LispNumber(LispTypes):
     pass
 
 class LispSymbol(LispTypes):
-    pass
+    def setvalue(self, newval):
+        self.val = newval
 
 class LispString(LispTypes):
     pass
