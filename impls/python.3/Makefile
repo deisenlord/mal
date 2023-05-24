@@ -18,5 +18,8 @@ mal: mal.pyz
 	cat $< >> $@
 	chmod +x $@
 
+install:
+	sudo cp mal /usr/local/bin
+	sudo cp bootstrap.mal /usr/local/lib/mal
 clean:
 	rm -f mal.pyz mal
