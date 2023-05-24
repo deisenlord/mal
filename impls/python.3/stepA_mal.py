@@ -66,7 +66,7 @@ def PRINT(tree):
 def nsfixup(body, env):
     if (env.getns() == 'user'): 
         return
-
+    
     if (lisp.isSymbol(body)):
         body.setvalue(env.qualify(body.value()))
         return
@@ -99,6 +99,8 @@ def EVAL(tree, env):
             key = tree.second().value()
             val = EVAL(tree.third(), env)
             env.set(env.qualify(key), val)
+            if (lisp.isFunction(val) and not val.intrinsic):
+                nsfixup(val.val, env)
             return val
         elif (lisp.isSymbol(arg1) and arg1.value() == "ns"):
             ns = tree.second()
@@ -203,7 +205,6 @@ def EVAL(tree, env):
             dummys = tree.second().value()
             body = tree.third()
             if (env.getns() != 'user'):
-                nsfixup(body, env)
                 env = env.outer
             ret = lisp.LispFunction(body, env, [b.value() for b in dummys], intrinsic = False)
             return ret
@@ -254,6 +255,9 @@ def rep(instr, env):
 # Root environment
 repl_env = lispenv.Environments(None)
 repl_env.setns("user")
+
+# Alias map for namespace aliases via nsalias
+nsalias = lispenv.globalAliases
 
 #
 # Lisp intrinsics requiring EVAL, otherwise would be in core.py
@@ -337,6 +341,20 @@ def i_printenv():
     repl_env.dump()
     return lisp.LispNil(None)
 
+def i_alias(orig, alias):
+    if (not lisp.isSymbol(orig)):
+        raise Exception("nsalias: arg0 (orig) not a symbol")
+    if (not lisp.isSymbol(alias)):
+        raise Exception("nsalias: arg1 (alias) not a symbol")
+    
+    nsalias.create(orig.value(), alias.value())
+    return lisp.LispNil(None)
+
+def i_printaliases():
+    nsalias.dump()
+    return lisp.LispNil(None)
+
+
 # Add evil and swap to envronment
 repl_env.set("eval",      lisp.LispFunction(lambda tree: evil(tree, repl_env)))
 repl_env.set("swap!",     lisp.LispFunction(i_swap))
@@ -346,7 +364,10 @@ repl_env.set("map",       lisp.LispFunction(i_map))
 
 # Namespace, env
 repl_env.set("print-env", lisp.LispFunction(i_printenv))
-                                  
+repl_env.set("nsalias",   lisp.LispFunction(i_alias))
+repl_env.set("nsalias-print", lisp.LispFunction(i_printaliases))
+
+
 # Built in intrinsic functions
 for funcsym in core.ns:
     repl_env.set(funcsym, core.ns[funcsym])
@@ -362,7 +383,7 @@ EVAL(READ('(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\n
 EVAL(READ("(defmacro! cond (fn* (& xs) (if (> (count xs) 0) (list 'if (first xs) (if (> (count xs) 1) (nth xs 1) (throw \"odd number of forms to cond\")) (cons 'cond (rest (rest xs)))))))"), repl_env)
 
 # Additional bootstrap lisp code
-EVAL(READ('(if (fileexists? "/usr/local/lib/mal/bootstrap.mal") (load-file "/usr/local/lib//mal/bootstrap.mal"))'), repl_env)
+EVAL(READ('(if (fileexists? "./bootstrap.mal") (load-file "./bootstrap.mal") (load-file "/usr/local/lib/mal/bootstrap.mal"))'), repl_env)
 
 # Yahoo...
 

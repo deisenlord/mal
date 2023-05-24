@@ -1,18 +1,7 @@
 ; bootstrap.mal - Add functionality to be loaded at runtime here.
 
-; Load namespace
-(defmacro! require (fn* [ns & options]
-    (let* [opt  (apply hash-map options)]
-        (do
-            (eval (read-string (str "(do " (slurp (str ns ".mal")) "\nnil)")))
-            nil
-        )
-    )
-))
-
-; Tracing for functions, includes recursive level
-(defmacro! trace-off (fn* [func] (list 'trace func (str func) false)))
-(defmacro! trace-on  (fn* [func] (list 'trace func (str func) true)))
+; Path list for finding source files
+(def! *PATHLIB* ["." "./libmal" "/usr/local/lib/mal"])
 
 ; Simple if with implict do, no else clause
 (defmacro! when (fn* [test & body]
@@ -30,7 +19,84 @@
     (not (= a b))
 ))
 
-(def! eq =)
+(def! eq (fn* [a b]
+    (= a b)
+))
+
+(def! nil? (fn* [a]
+    (= a nil)
+))
+
+(def! notnil? (fn* [a]
+    (not (nil? a))
+))
+
+; Replace elements in a list, replacement values in map
+(def! replace (fn* [amap alist]
+    (if (empty? alist)
+        ()
+	(let* [e    (first alist)
+	       v    (if (contains? amap e) (get amap e) e)]
+	    (concat v (replace amap (rest alist)))
+        )
+    )
+))
+
+; Next two belong in a string namespace but are needed for require's implementation
+
+; Join a lists members as strings with given seperators
+(def! join (fn* [sep alist]
+    (if (empty? alist)
+        ""
+        (str (first alist) (if (= (count alist) 1) "" sep) (join sep (rest alist)))
+    )
+))	  
+
+; Replace character in string 
+(def! replace-char (fn* [s old new]
+    (join "" (replace (hash-map old new) (seq s)))     
+))
+
+; Find a file on a path list
+(def! find-file (fn* [fname pathlist]
+    (if (empty? pathlist)
+        nil
+	(let* [pathname (str (first pathlist) "/" fname)]
+	    (if (fileexists? pathname)
+	        pathname
+		(find-file fname (rest pathlist))
+	    )
+	)
+    )
+))
+
+; Find a file on the offical path list
+(def! find-path (fn* [fname]
+    (find-file fname *PATHLIB*)
+))
+
+; Load namespace
+(defmacro! require (fn* [ns & options]
+    (let* [opt   (apply hash-map options)
+           fname (str (replace-char (str ns) "." "/") ".mal")
+	   path  (find-path fname) ]
+        (if (notnil? path)
+	    (do
+                (eval (read-string (str "(do " (slurp path) "\nnil)")))
+	        (if (contains? opt :alias)
+	            (nsalias ns (get opt :alias))
+	        )
+		nil
+	    )
+	    (throw (str "require: cannot locate '" (str fname) "' on *PATHLIB*")) 
+        )
+    )
+))
+
+; Tracing for functions, includes recursive level
+(defmacro! trace-off (fn* [func] (list 'trace func (str func) false)))
+(defmacro! trace-on  (fn* [func] (list 'trace func (str func) true)))
+
 
 ; Increment a number, list or vector
 (def! inc (fn* [x]
@@ -75,13 +141,7 @@
       )    
 ))
 
-; Join a lists members as strings with given seperators
-(def! join (fn* [sep alist]
-    (cond
-	(empty? alist)  ""
-        "else"          (str (first alist) (if (= (count alist) 1) "" sep) (join sep (rest alist)))
-    )
-))
+
 
 ; serialization.mal - Serialize and deserialize data structures
 
@@ -113,4 +173,3 @@
     )
 ))
 
-      

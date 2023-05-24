@@ -30,7 +30,7 @@ class Environments:
             return name
 
     def _get(self, key):
-        return self.data[key]st
+        return self.data[key]
 
     def set(self, key, value):
         self.data[key] = value
@@ -45,6 +45,7 @@ class Environments:
                 return self.outer.find(key)
 
     def get(self, key):
+        key = globalAliases.alias(key)
         if (self.ns != 'user' and "/" not in key):
             ev = self.find(self.qualify(key))
             if (ev != None):
@@ -94,3 +95,34 @@ class Environments:
             print(key + " : " + printer.pr_str(val))
         if (self.outer):
             self.outer.dump()
+
+
+# Global Namespace aliases
+class Aliases:
+    def __init__(self):
+        self.map = {}
+
+    def create(self, orig, alias):
+        self.map[alias] = orig
+
+    def alias(self, sym):
+        if ("/" in sym):
+            symparts = sym.split("/")
+            if (symparts[0] in self.map):
+                return self.map[symparts[0]] + "/" + symparts[1]
+            else:
+                return sym
+        else:
+            return sym
+
+    def dump(self):
+        for key, val in self.map.items():
+            print(key + " -> " + val)
+
+
+# Global alias table
+globalAliases = Aliases()
+
+
+            
+        
