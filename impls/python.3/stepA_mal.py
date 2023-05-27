@@ -99,14 +99,13 @@ def EVAL(tree, env):
             key = tree.second().value()
             val = EVAL(tree.third(), env)
             env.set(env.qualify(key), val)
-            if (lisp.isFunction(val) and not val.intrinsic):
+            if (lisp.isSymbol(val) or (lisp.isFunction(val) and not val.intrinsic)):
                 nsfixup(val.val, env)
             return val
         elif (lisp.isSymbol(arg1) and arg1.value() == "ns"):
             ns = tree.second()
             if (lisp.isSymbol(ns)):
-                nsenv = lispenv.Environments(env)
-                nsenv.setns(ns.value())
+                nsenv = lispenv.Environments(env, ns = ns.value())
                 ev = eval_ast(lisp.LispList(tree.rest(2)), nsenv)
                 env.nsinstall(nsenv)
                 return lisp.LispNil(None)
@@ -253,8 +252,7 @@ def rep(instr, env):
     return PRINT(EVAL(tree, env))
 
 # Root environment
-repl_env = lispenv.Environments(None)
-repl_env.setns("user")
+repl_env = lispenv.Environments(None, ns = "user")
 
 # Alias map for namespace aliases via nsalias
 nsalias = lispenv.globalAliases
@@ -419,7 +417,7 @@ else:
             continue
         except Exception as e:
             if (isinstance(e, lisp.LispException)):
-                print(printer.pr_str(e.malobject))
+                print(printer.pr_str(e.malobject, False))
             else:
                 print(e.args[0])
 

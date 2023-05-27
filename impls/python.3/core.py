@@ -104,7 +104,7 @@ def i_mkHashMap(*args):
         
         return lisp.LispHashMap(dict)
 
-def i_assoc(*args):
+def i_assoc (*args):
     if (not lisp.isHashMap(args[0])):
         raise Exception("assoc: arg0 not a hash map")
 

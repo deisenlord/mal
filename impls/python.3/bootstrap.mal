@@ -7,8 +7,20 @@
 (defmacro! when (fn* [test & body]
   (list 'if test (cons 'do body))))
 
+(defmacro! for (fn* [initlist test & body]
+    `(let* ~initlist
+         (while ~test
+	     (do ~@body)
+	 )
+     )
+))
+
 (def! second (fn* [lst]
-    (first (rest lst))
+    (nth lst 1)
+))
+
+(def! third (fn* [lst]
+    (nth lst 2)
 ))
 
 (def! notempty? (fn* [lst]
@@ -88,14 +100,14 @@
 	        )
 		nil
 	    )
-	    (throw (str "require: cannot locate '" (str fname) "' on *PATHLIB*")) 
+	    (throw (str "require: cannot locate '" (str fname) "' on " (str *PATHLIB*))) 
         )
     )
 ))
 
 ; Tracing for functions, includes recursive level
 (defmacro! trace-off (fn* [func] (list 'trace func (str func) false)))
-(defmacro! trace-on  (fn* [func] (list 'trace func (str func) true)))
+(defmacro! trace-on  (fn* [func]  (list 'trace func (str func) true)))
 
 
 ; Increment a number, list or vector
@@ -167,7 +179,7 @@
 ; Return the value of a serialized variable
 (def! serialize-realize (fn* [container varname]
     (if (contains? container varname)
-        (eval (read-string (get container varname)))
+        (eval b(read-string (get container varname)))
     
         (throw (str "serialize-realize: no such variable '" varname "' in container"))
     )

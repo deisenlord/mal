@@ -6,10 +6,10 @@ import printer
 
 #Lisp recursive environments
 class Environments:
-    def __init__(self, outer = None, binds = [], exprs = []):
+    def __init__(self, outer = None, binds = [], exprs = [], ns = ''):
         self.outer = outer
         self.data = {}
-        self.ns = ''
+        self.ns = ns
         for idx in range(len(binds)):
             if (binds[idx] == "&"):
                 self.set(binds[idx+1], lisp.LispList(exprs[idx:]))
