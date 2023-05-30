@@ -179,7 +179,7 @@
 ; Return the value of a serialized variable
 (def! serialize-realize (fn* [container varname]
     (if (contains? container varname)
-        (eval b(read-string (get container varname)))
+        (eval (read-string (get container varname)))
     
         (throw (str "serialize-realize: no such variable '" varname "' in container"))
     )
