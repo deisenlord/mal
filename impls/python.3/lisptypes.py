@@ -64,6 +64,8 @@ def isKeyword(t):
 # ----------
 
 class LispList(LispTypes):
+    def typestr(self): return "list"
+    
     def first(self):
         if (len(self.val) >= 1):
             return self.val[0]
@@ -92,6 +94,8 @@ class LispList(LispTypes):
         return len(self.val)
 
 class LispVector(LispTypes):
+    def typestr(self): return "vector"
+    
     def first(self):
         if (len(self.val) >= 1):
             return self.val[0]
@@ -120,23 +124,24 @@ class LispVector(LispTypes):
         return len(self.val)
 
 class LispHashMap(LispTypes):
-    pass
+    def typestr(self): return "hashmap"
 
 class LispNumber(LispTypes):
-    pass
+    def typestr(): return "number"
 
 class LispSymbol(LispTypes):
+    def typestr(self): return "symbol"
     def setvalue(self, newval):
         self.val = newval
 
 class LispString(LispTypes):
-    pass
+    def typestr(self): return "string"
 
 class LispNil(LispTypes):
-    pass
+    def typestr(self): return "nil"
 
 class LispBoolean(LispTypes):
-    pass
+    def typestr(self): return "boolean"
 
 def trace_call(name, level, args):
     for i in range(level-1):
@@ -160,7 +165,15 @@ class LispFunction(LispTypes):
         self.trace = False
         self.tracename = ""
         self.tlevel = 0
-        
+
+    def typestr(self):
+        if (self.intrinsic):
+            return "builtin function"
+        elif (self.isMacro):
+            return "macro"
+        else:
+            return "user function"
+    
     # self.val is either a python function or a user defined function body
     def body(self):
         return self.val
@@ -182,6 +195,7 @@ class LispFunction(LispTypes):
         return ret
 
 class LispAtom(LispTypes):
+    def typestr(self): return "atom"
     def set(self, val):
         self.val = val
 

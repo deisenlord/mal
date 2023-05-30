@@ -96,7 +96,7 @@
 	    (do
                 (eval (read-string (str "(do " (slurp path) "\nnil)")))
 	        (if (contains? opt :alias)
-	            (nsalias ns (get opt :alias))
+	            (ns-alias ns (get opt :alias))
 	        )
 		nil
 	    )
@@ -131,13 +131,13 @@
 (def! dec (fn* [x]
     (cond
         (list?   x)
-	    (map (fn* [y] (- 1 y)), x)
+	    (map (fn* [y] (- y 1)), x)
 	    
 	(vector? x)
-	    (vec (map (fn* [y] (- 1 y)), x))
+	    (vec (map (fn* [y] (- y 1)), x))
 	  
         (number? x)
-	    (- 1 x)
+	    (- x 1)
 
 	:else
             (throw "dec: arg0 must be list, vector or number")

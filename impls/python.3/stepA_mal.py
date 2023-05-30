@@ -64,7 +64,7 @@ def PRINT(tree):
     return printer.pr_str(tree)
 
 def nsfixup(body, env):
-    if (env.getns() == 'user'): 
+    if (env.nsname == 'user'): 
         return
     
     if (lisp.isSymbol(body)):
@@ -203,8 +203,8 @@ def EVAL(tree, env):
         elif (lisp.isSymbol(arg1) and arg1.value() == "fn*"):
             dummys = tree.second().value()
             body = tree.third()
-            if (env.getns() != 'user'):
-                env = env.outer
+            #if (env.nsname != 'user'):
+            #    env = env.outer
             ret = lisp.LispFunction(body, env, [b.value() for b in dummys], intrinsic = False)
             return ret
         else:
@@ -335,23 +335,32 @@ def i_map(*args):
 def i_quasiquote(tree):
     return quasiquote(tree.second())
 
-def i_printenv():
-    repl_env.dump()
-    return lisp.LispNil(None)
-
-def i_alias(orig, alias):
+def i_nsalias(orig, alias):
     if (not lisp.isSymbol(orig)):
-        raise Exception("nsalias: arg0 (orig) not a symbol")
+        raise Exception("ns-alias: arg0 (orig) not a symbol")
     if (not lisp.isSymbol(alias)):
-        raise Exception("nsalias: arg1 (alias) not a symbol")
+        raise Exception("ns-alias: arg1 (alias) not a symbol")
     
     nsalias.create(orig.value(), alias.value())
+    return lisp.LispNil(None)
+
+def i_nsall():
+    repl_env.nsprint()
+    return lisp.LispNil(None)
+
+def i_nsdir(*args):
+    ns = "user"
+    if (len(args) == 1 and lisp.isSymbol(args[0])):
+        ns = args[0].value()
+    elif (len(args) != 0):
+        raise Exception("ns-dir: takes zero or one namespace symbol")
+    
+    repl_env.nsdir(ns)
     return lisp.LispNil(None)
 
 def i_printaliases():
     nsalias.dump()
     return lisp.LispNil(None)
-
 
 # Add evil and swap to envronment
 repl_env.set("eval",      lisp.LispFunction(lambda tree: evil(tree, repl_env)))
@@ -361,9 +370,10 @@ repl_env.set("apply",     lisp.LispFunction(i_apply))
 repl_env.set("map",       lisp.LispFunction(i_map))
 
 # Namespace, env
-repl_env.set("print-env", lisp.LispFunction(i_printenv))
-repl_env.set("nsalias",   lisp.LispFunction(i_alias))
-repl_env.set("nsalias-print", lisp.LispFunction(i_printaliases))
+repl_env.set("ns-alias",   lisp.LispFunction(i_nsalias))
+repl_env.set("ns-dir",     lisp.LispFunction(i_nsdir))
+repl_env.set("ns-all",     lisp.LispFunction(i_nsall))
+repl_env.set("ns-aliases", lisp.LispFunction(i_printaliases))
 
 
 # Built in intrinsic functions
@@ -406,7 +416,7 @@ else:
     rep('(println (str "Mal [" *host-language* "]"))', repl_env)
     while (True):
         try:
-            instr = lisp_input.readline(repl_env.getns() + "> ")
+            instr = lisp_input.readline(repl_env.nsname + "> ")
             if (instr == ""):
                 continue
             if (instr == None):
@@ -417,7 +427,7 @@ else:
             continue
         except Exception as e:
             if (isinstance(e, lisp.LispException)):
-                print(printer.pr_str(e.malobject, False))
+                print(printer.pr_str(e.malobject))
             else:
                 print(e.args[0])
 

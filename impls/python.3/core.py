@@ -189,6 +189,8 @@ def i_isEmpty(a):
 def i_count(a):
     if (lisp.isListLike(a)):
         return lisp.LispNumber(len(a.value()))
+    elif lisp.isHashMap(a):
+        return lisp.LispNumber(len(a.value()))
     else:
         return lisp.LispNumber(0)
 
@@ -223,7 +225,6 @@ def i_rest(alist):
 def i_seq(a):
     if (not (lisp.isListLike(a) or lisp.isString(a) or lisp.isNil(a))):
         raise Exception("seq: argument must be string, nil or list like")
-
     if (lisp.isListLike(a) and len(a.value()) == []):
         return lisp.LispNil(None)
     elif (lisp.isString(a) and len(a.value()) == 0):

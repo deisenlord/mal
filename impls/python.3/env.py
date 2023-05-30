@@ -9,7 +9,8 @@ class Environments:
     def __init__(self, outer = None, binds = [], exprs = [], ns = ''):
         self.outer = outer
         self.data = {}
-        self.ns = ns
+        self.nsname = ns
+        self.nslist = {}
         for idx in range(len(binds)):
             if (binds[idx] == "&"):
                 self.set(binds[idx+1], lisp.LispList(exprs[idx:]))
@@ -17,15 +18,9 @@ class Environments:
             else:
                 self.set(binds[idx], exprs[idx])
 
-    def setns(self, ns):
-        self.ns = ns
-
-    def getns(self):
-        return self.ns
-
     def qualify(self, name):
-        if (self.ns != 'user' and "/" not in name):
-            return self.ns + "/" + name
+        if (self.nsname != 'user' and "/" not in name):
+            return self.nsname + "/" + name
         else:
             return name
 
@@ -42,59 +37,68 @@ class Environments:
             if (self.outer == None):
                 return None 
             else:
-                return self.outer.find(key)
-
+                return self.outer.find(key)    
+             
     def get(self, key):
         key = globalAliases.alias(key)
-        if (self.ns != 'user' and "/" not in key):
+        if (self.nsname != 'user' and "/" not in key):
             ev = self.find(self.qualify(key))
-            if (ev != None):
+            if (ev):
                 return ev._get(self.qualify(key))
+            
+            ev = self.find(key)
+            if (ev):
+                return ev._get(key)
+            
+        elif ("/" in key):
+            parts = key.split("/")
+            ev = self.findroot().nslist[parts[0]]
+            if (ev):
+                ev = ev.find(key)
+                if (ev):
+                    return ev._get(key)
             else:
-                ev = self.find(key)
+                raise Exception("mal: namespace '{0}' not found".format(parts[0]))
+
         else:
             ev = self.find(key)
-
-        if (ev != None):
-            return ev._get(key)
-        else:
-            raise Exception("mal: '{0}' not found".format(key)) 
+            if (ev != None):
+                return ev._get(key)
+        
+        raise Exception("mal: '{0}' not found".format(key)) 
 
     def findroot(self):
-        if (self.ns == 'user'):
-            return self
-        else:
-            root = self.outer
-            while (root.ns != 'user'):
-                root = root.outer
-            return root
-
-    def findhead(self):
-        root = self.findroot()
+        root = self
         while (root.outer != None):
             root = root.outer
-
+        
         return root
 
     def nsinstall(self, env):
-        head = self.findhead()
-        env.outer = None
-        head.outer = env
-	
-    def nspropagate(self):
-        root = self.outer
-        while (root.outer != None):
-            root = root.outer
+        root = self.findroot()
+        env.outer = root
+        root.nslist[env.nsname] = env
 
-        for k in self.data.keys():
-            root.data[k] = self.data[k]
+    def nsprint(self):
+        keys = self.nslist.keys()
+        print("Namespaces:")
+        print("user")
+        for s in keys:
+            if (s): print(s)
+        
+    def nsdir(self, ns):
+        map = None
+        if (ns == "user"):
+            map = self.data
+        else:
+            env = self.nslist[ns]
+            if (env != None):
+                map = env.data
 
-    def dump(self):
-        print("NS(" + self.ns + "):")
-        for key, val in self.data.items():
-            print(key + " : " + printer.pr_str(val))
-        if (self.outer):
-            self.outer.dump()
+        if (map):
+            print("NS(" + ns + "):")
+            for (key, val) in map.items():
+                if (key): print(key + " : " + val.typestr())
 
 
 # Global Namespace aliases
