@@ -1,0 +1,118 @@
+; sets.mal - Set implementation based on maps
+;
+; DJE 23
+
+(ns sets
+
+; empty set
+(def! empty {})
+
+; create a set from a list. duplicates removed
+(def! set (fn* [listlike]
+    (if (sequential? listlike)
+        (apply conj (map (fn* [x] (assoc {} (str x) x)) listlike))
+	(throw "sets/set: argument must be a sequence")
+    )
+))
+
+; test for set membership
+(def! member? (fn* [aset testmem]
+    (if (map? aset)
+        (contains? aset (str testmem))
+	(throw "sets/member?: first argument must be a set(ie. map)")
+    )
+))
+
+; returns members of set as a list
+(def! members (fn* [aset]
+    (if (map? aset)
+        (vals aset)
+	(throw "sets/members: first argument must be a set(ie. map)")
+    )
+))
+
+; returns union of two sets
+(def! union (fn* [one two]
+    (if (and (map? one) (map? two))
+        (conj one two)
+        (throw "sets/union: arguments must be sets(ie. maps)")
+    )
+))
+
+; returns intersection of set one and two
+(def! intersection (fn* [one two]
+    (if (and (map? one) (map? two))
+        (cond
+	    (= one empty)
+	        two
+	    (= two empty)
+	        one
+	    (< (count one) (count two)) 
+                (apply conj (map (fn* [x] (if (contains? two x) (assoc {} x (get one x)) {})) (keys one)))
+            :else
+	        (apply conj (map (fn* [x] (if (contains? one x) (assoc {} x (get two x)) {})) (keys two)))
+        )
+	(throw "sets/intersection: arguments must be sets(ie. maps)")
+    )
+))
+
+; returns set one minus members contained in set two
+(def! difference (fn* [one two]
+    (if (and (map? one) (map? two))
+        (cond
+	    (= one empty)
+	        one
+	    (= two empty)
+	        one
+            :else
+	        (apply conj (map (fn* [x] (if (contains? two x) {} (assoc {} x (get one x)))) (keys one)))
+        )
+	(throw "sets/difference: arguments must be sets(ie. maps)")
+    )
+))
+
+; is set one a subset of set two
+(def! subset? (fn* [one two]
+    (if (and (map? one) (map? two))
+        (if (<= (count one) (count two)) 
+            (let* [ matches (atom 0) ]
+                (do
+	            (map (fn* [x] (if (contains? two x) (swap! matches + 1))) (keys one))
+                    (= (deref matches) (count one))
+	        )
+	    )
+	    false
+        )
+	(throw "sets/subset: arguments must be sets(ie. maps)")
+    )
+))
+
+
+; is set one a superset of set two
+(def! superset? (fn* [one two]
+    (if (and (map? one) (map? two))
+        (if (>= (count one) (count two)) 
+            (let* [ matches (atom 0) ]
+                (do
+	            (map (fn* [x] (if (contains? one x) (swap! matches + 1))) (keys two))
+                    (= (deref matches) (count two))
+	        )
+	    )
+	    false	    
+	)
+        (throw "sets/superset: arguments must be sets(ie. maps)")
+    )    
+))
+
+; return elements of a set that satisfy predicate
+(def! select (fn* [aset pred]
+    (if (and (map? aset) (fn? pred))
+        (apply conj (map (fn* [x] (if (pred (get aset x)) (assoc {} x (get aset x)) {})) (keys aset)))
+	(throw "sets/select: arguments must be a set and a predicate; (fn* [x])")
+    )
+
+))
+
+
+)
+

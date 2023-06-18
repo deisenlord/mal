@@ -1,0 +1,88 @@
+; lists.mal - classic list operations
+;
+; DJE 23
+
+(ns lists
+
+; Requires destructuring for let*+ 
+(def! range (fn* [n & args]
+    (let*+ [ [step start] args 
+              step  (default step  1)
+              start (default start 0)
+              res   () ]
+        (do
+            (for (< start n)
+                (def! res (concat res start))
+                (def! start (+ start step))
+            )
+            res
+        )
+    )
+))
+
+(def! take (fn* [n l]
+    (map (fn* [i] (nth l i)) (range n))
+))
+
+(def! interleave (fn* [s1 s2]
+    (if (empty? s1)
+        ()
+        (cons (first s1) (cons (first s2) (interleave (rest s1) (rest s2))))
+    )
+))
+
+(def! pair (fn* [l]
+    (if (odd? (count l))
+        (throw "pair: requires a list with an even number of elements")
+      
+        (if (empty? l)
+            ()
+            (partition 2 l)
+        )
+    )
+))
+
+(def! unique (fn* [l]
+    (vals (lists/reduce (fn* [res el] (if (contains? res (str el)) res (conj res (hash-map (str el) el)))) {} l))
+))
+
+
+; Return list of elements matching predicate
+(def! filter (fn* [pred ll]
+    (apply concat (map (fn* [l] (if (pred l) (list l) ())) ll))
+
+))
+
+
+(def! merge (fn* [args]
+        (if (empty? args)
+            {}
+            (let* [next (merge (rest (rest args)))]
+                (if (contains? next (first args))
+                    (assoc next (first args) (conj (get next (first args)) (second args)))
+                    (assoc next (first args) (list (second args)))
+                )
+            )
+        )
+))
+
+(def! make-keys (fn* [colnums ll]
+    (map (fn* [l] (join "/" (map (fn* [n] (nth l n)) colnums))) ll)
+))
+
+(def! group-by (fn* [colnums ll]
+     (let* [ ks (make-keys colnums ll) ]
+           (merge (interleave ks ll))
+    )
+))
+
+; Classic reduce
+(def! reduce (fn* [f init xs]
+      (if (empty? xs)
+          init
+	  (reduce f (f init (first xs)) (rest xs))
+      )    
+))
+
+
+)

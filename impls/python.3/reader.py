@@ -129,7 +129,7 @@ def read_atom(rdr):
         num = int(tok)
         val = lisp.LispNumber(num)
     elif (float_re.match(tok)):
-        num = int(float(tok))
+        num = float(tok)
         val = lisp.LispNumber(num)
     elif (tok == "nil"):
         val = lisp.LispNil(None)

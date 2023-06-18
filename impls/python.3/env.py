@@ -50,7 +50,7 @@ class Environments:
             if (ev):
                 return ev._get(key)
             
-        elif ("/" in key):
+        elif ("/" in key and len(key) > 1):
             parts = key.split("/")
             ev = self.findroot().nslist[parts[0]]
             if (ev):

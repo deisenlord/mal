@@ -9,7 +9,7 @@ import lisp_input
 import env as lispenv
 import core
 
-sys.setrecursionlimit(5000)
+sys.setrecursionlimit(8000)
 
 # Quoting support
 def quasiquote(tree):
@@ -74,7 +74,7 @@ def nsfixup(body, env):
     for e in body.value():
         if (lisp.isSymbol(e) and env.find(env.qualify(e.value())) != None):
             e.setvalue(env.qualify(e.value()))
-        elif (lisp.isList(e)):
+        elif (lisp.isListLike(e)):
             nsfixup(e, env)
 
 def EVAL(tree, env):
@@ -382,7 +382,7 @@ for funcsym in core.ns:
 
 # Built-in variables*
 repl_env.set("*ARGV*", lisp.LispList([]))
-repl_env.set("*host-language*", lisp.LispString("python3 DJE 4/20/2023"))
+repl_env.set("*host-language*", lisp.LispString("python3 DJE 2023"))
 repl_env.set("*ns*", lisp.LispHashMap({}))
 
 # Built in user defined functions 

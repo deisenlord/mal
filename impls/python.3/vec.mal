@@ -1,0 +1,89 @@
+; vec.mal - Vectorized operations (elementwise and vector scalar).
+;
+; DJE 23
+
+(ns vec
+
+(def! div (fn* [a b]
+    (cond
+        (and (list? a) (list? b))
+            (if (noteq (count a) (count b))
+                (throw "vec/div: lists must be equal size")
+            
+                (map (fn* [p] (/ (first p) (second p))) (lists/pair (lists/interleave a b)))
+             )
+             
+         (and (list? a) (not (list? b)))
+             (map (fn* [x] (/ x b)) a)
+             
+         (and (list? b) (not (list? a)))
+             (map (fn* [x] (/ x a)) b)
+             
+         :else
+             (/ a b)
+     )
+))
+
+(def! mult (fn* [a b]
+    (cond
+        (and (list? a) (list? b))
+            (if (noteq (count a) (count b))
+                (throw "vec/mult: lists must be equal size")
+            
+                (map (fn* [p] (* (first p) (second p))) (lists/pair (lists/interleave a b)))
+             )
+             
+         (and (list? a) (not (list? b)))
+             (map (fn* [x] (* x b)) a)
+             
+         (and (list? b) (not (list? a)))
+             (map (fn* [x] (* x a)) b)
+             
+         :else
+             (* a b)
+     )
+))
+
+(def! add (fn* [a b]
+    (cond
+        (and (list? a) (list? b))
+            (if (noteq (count a) (count b))
+                (throw "vec/add: lists must be equal size")
+            
+                (map (fn* [p] (+ (first p) (second p))) (lists/pair (lists/interleave a b)))
+             )
+             
+         (and (list? a) (not (list? b)))
+             (map (fn* [x] (+ x b)) a)
+             
+         (and (list? b) (not (list? a)))
+             (map (fn* [x] (+ x a)) b)
+             
+         :else
+             (+ a b)
+     )
+))
+
+(def! sub (fn* [a b]
+    (cond
+        (and (list? a) (list? b))
+            (if (noteq (count a) (count b))
+                (throw "vec/sub: lists must be equal size")
+            
+                (map (fn* [p] (- (first p) (second p))) (lists/pair (lists/interleave a b)))
+             )
+             
+         (and (list? a) (not (list? b)))
+             (map (fn* [x] (- x b)) a)
+             
+         (and (list? b) (not (list? a)))
+             (map (fn* [x] (- x a)) b)
+             
+         :else
+             (- a b)
+     )
+))
+
+
+
+)

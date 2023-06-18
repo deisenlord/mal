@@ -1,0 +1,79 @@
+; csv.mal - read csv file into list of lists with column header map as meta data
+;
+; DJE 23
+;
+
+
+(def! _csv-pycode (fn* [filename header floating_cols]
+(str
+"
+import csv
+def pyreadcsv (fname):
+    data = []
+    fltcols = " floating_cols "
+    head = " header "
+    with open(fname) as csvfile:
+        dialect = csv.Sniffer().sniff(csvfile.readline())
+        csvfile.seek(0)
+        reader = csv.reader(csvfile, dialect)
+        for row in reader:
+            final = []
+            for idx, e in enumerate(row):
+                if (idx in fltcols and not head):
+                    final.append (float(e.split(chr(22))[0].replace('$','').replace(',','')))
+                else:
+                    final.append(e)
+            head = False
+	        
+            data.append(final)
+    
+    return data
+csvdata = pyreadcsv(\"" filename "\")
+"
+)
+))
+
+; Read csv file, attach column headers as map to column index in meta
+(defmacro! read-csv (fn* [filename & options]
+    `(let* [ opt    (apply hash-map '~options)
+	     head   (if (contains? opt :header) 1 0)
+         cols   (if (contains? opt :float-columns) (str "[" (join "," (get opt :float-columns)) "]") "[]")
+	     header ()
+         data   () ]
+         (do
+             (pyblock! (_csv-pycode ~filename head cols))
+             (def! data (pyexpr! "csvdata"))
+	         ; if there is a header attach a map between column name and nth
+	         (if (= head 1)
+	            (do
+	               (def! header (first data))
+		           (def! header (apply conj (map 
+                       (let* [col (atom -1)] (fn* [e] (do (swap! col + 1) (hash-map (keyword e) (deref col))))) header))
+                   )
+		           (with-meta (rest data) header)
+		        )
+	            (with-meta data header)
+	         )
+	     )
+     )
+))
+
+(def! to-csv (fn* [l header]
+    (let* [ s (atom "")
+            i 0
+            n (count l) ]
+        (do
+            (when (notempty? header)
+                (swap! s (fn* [v] (str v (join "," header) "\n")))
+            )
+ 
+            (for (< i n)
+                (swap! s (fn* [v] (str v (join "," (nth l i)) "\n")))
+	            (def! i (inc i))
+            )
+            
+            (deref s)
+        )
+    )
+))
+

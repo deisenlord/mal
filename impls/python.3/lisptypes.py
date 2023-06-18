@@ -127,7 +127,7 @@ class LispHashMap(LispTypes):
     def typestr(self): return "hashmap"
 
 class LispNumber(LispTypes):
-    def typestr(): return "number"
+    def typestr() :return "number"
 
 class LispSymbol(LispTypes):
     def typestr(self): return "symbol"
@@ -212,8 +212,6 @@ def Py2Lisp(pyobj):
             hm[k] = Py2Lisp(pyobj[k])
         return LispHashMap(hm)
     elif (type(pyobj) == int or type(pyobj) == float):
-        if (type(pyobj) == float):
-            pyobj = int(float)
         return LispNumber(pyobj)
     elif (type(pyobj) == str):
         return LispString(pyobj)

@@ -1,0 +1,80 @@
+; stats.mal - Basic statistic that work on one dimensional lists or vectors
+; 
+; DJE 23
+
+(ns stats
+
+(def! sum (fn* [l]
+    (lists/reduce + 0 l)
+))
+
+(def! _max (fn* [& l] (lists/reduce (fn* [acc x] (if (> x acc) x  acc)) (first l) l)))
+
+(def! max (fn* [l]
+    (apply _max l)
+))
+
+(def! _min (fn* [& l] (lists/reduce (fn* [acc x] (if (< x acc) x  acc)) (first l) l)))
+
+(def! min (fn* [l]
+    (apply _min l)
+))
+
+(def! minloc (fn* [l]
+    (second (lists/reduce
+        (fn* [state v]
+            (let* [curmin (first state) minidx (second state) curidx (third state)]
+                (if (< v curmin)
+                    [v curidx (inc curidx)]
+	                [curmin minidx (inc curidx)]
+                )
+             ) 	 
+         )
+	     [(first l) 0 0] l))
+))
+
+(def! maxloc (fn* [l]
+    (second (lists/reduce
+        (fn* [state v]
+            (let* [curmin (first state) minidx (second state) curidx (third state)]
+                (if (> v curmin)
+                    [v curidx (inc curidx)]
+	                [curmin minidx (inc curidx)]
+                )
+            )
+	     )
+	     [(first l) 0 0] l))
+))
+
+(def! mean (fn* [l]
+    (/ (sum l) (count l))
+))
+
+(def! median (fn* [l]
+    (let* [ sorted (sort l {})
+            n      (count l) 
+            mid    (dec (int (/ (inc n) 2))) ]
+        (if (odd? n)
+            (nth sorted mid)
+            (/ (+ (nth sorted mid) (nth sorted (+ mid 1))) 2)
+        )
+    )
+))
+
+(def! ssqr (fn* [l]
+    (lists/reduce (fn* [acc x] (+ acc (* x x))) 0 l)
+))
+
+(def! variance (fn* [l]
+    (let* [ m (mean l)
+            s (map (fn* [e] (- e m)) l ) ]
+        (/ (ssqr s) (count l))
+    )
+))
+
+(def! std (fn* [l]
+    (sqrt (variance  l))
+))
+
+
+)

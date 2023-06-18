@@ -1,47 +1,12 @@
-; bootstrap.mal - Add functionality to be loaded at runtime here.
+; bootstrap.mal - Adds the require macro and it's support, requires in other core functionality.
+;          
+; DJE
 
 ; Path list for finding source files
 (def! *PATHLIB* ["." "./libmal" "/usr/local/lib/mal"])
 
-; Simple if with implict do, no else clause
-(defmacro! when (fn* [test & body]
-  (list 'if test (cons 'do body))))
 
-(defmacro! for (fn* [initlist test & body]
-    `(let* ~initlist
-         (while ~test
-	     (do ~@body)
-	 )
-     )
-))
-
-(def! second (fn* [lst]
-    (nth lst 1)
-))
-
-(def! third (fn* [lst]
-    (nth lst 2)
-))
-
-(def! notempty? (fn* [lst]
-    (not (empty? lst))
-))
-
-(def! noteq (fn* [a b]
-    (not (= a b))
-))
-
-(def! eq (fn* [a b]
-    (= a b)
-))
-
-(def! nil? (fn* [a]
-    (= a nil)
-))
-
-(def! notnil? (fn* [a]
-    (not (nil? a))
-))
+; This belongs in the list namespace but needed by require
 
 ; Replace elements in a list, replacement values in map
 (def! replace (fn* [amap alist]
@@ -54,7 +19,7 @@
     )
 ))
 
-; Next two belong in a string namespace but are needed for require's implementation
+; These two belongs in a string namespace but are needed for require's implementation
 
 ; Join a lists members as strings with given seperators
 (def! join (fn* [sep alist]
@@ -87,12 +52,12 @@
     (find-file fname *PATHLIB*)
 ))
 
-; Load namespace
+; Load namespace. Alias is global which is broken, really needs to have scope
 (defmacro! require (fn* [ns & options]
     (let* [opt   (apply hash-map options)
            fname (str (replace-char (str ns) "." "/") ".mal")
 	   path  (find-path fname) ]
-        (if (notnil? path)
+        (if (not (nil? path))
 	    (do
                 (eval (read-string (str "(do " (slurp path) "\nnil)")))
 	        (if (contains? opt :alias)
@@ -109,79 +74,10 @@
 (defmacro! trace-off (fn* [func] (list 'trace func (str func) false)))
 (defmacro! trace-on  (fn* [func]  (list 'trace func (str func) true)))
 
-
-; Increment a number, list or vector
-(def! inc (fn* [x]
-    (cond
-        (list?   x)
-	    (map (fn* [y] (+ 1 y)), x)
-	    
-	(vector? x)
-	    (vec (map (fn* [y] (+ 1 y)), x))
-	  
-        (number? x)
-	    (+ 1 x)
-
-	:else
-            (throw "inc: arg0 must be list, vector or number")
-        )
-    )
-)
-; ditto decrement
-(def! dec (fn* [x]
-    (cond
-        (list?   x)
-	    (map (fn* [y] (- y 1)), x)
-	    
-	(vector? x)
-	    (vec (map (fn* [y] (- y 1)), x))
-	  
-        (number? x)
-	    (- x 1)
-
-	:else
-            (throw "dec: arg0 must be list, vector or number")
-        )
-    )
-)
-
-(def! reduce (fn* [f init xs]
-      (if (empty? xs)
-          init
-
-	  (reduce f (f init (first xs)) (rest xs))
-      )    
-))
+;;**
+;;;; Add standard functionality here
+;;**
 
 
-
-; serialization.mal - Serialize and deserialize data structures
-
-; Add a variables/objects serialized value to a map for writing to a file
-(defmacro! serialize-add (fn* [container obj objname] 
-    (list 'assoc container objname (list 'str "'" (list 'pr-str obj)))
-))
-
-; Write a collection of serialized variables to a file
-(def! serialize-write (fn* [path container]
-    (spit path (pr-str container))
-))
-
-; Read a collection of serialized variables from a file, use -realize to restore individual values
-(def! serialize-read (fn* [path]
-    (if (fileexists? path)
-        (eval (read-string (slurp path)))
-
-        (throw (str "serialize-read: no such file '" path "'"))
-    )
-))
-
-; Return the value of a serialized variable
-(def! serialize-realize (fn* [container varname]
-    (if (contains? container varname)
-        (eval (read-string (get container varname)))
-    
-        (throw (str "serialize-realize: no such variable '" varname "' in container"))
-    )
-))
-
+(require core)
+(require lists)

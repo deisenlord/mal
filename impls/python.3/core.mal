@@ -1,0 +1,222 @@
+; core.mal - Add functionality to be loaded at runtime here.
+
+; identity function
+(def! identity (fn* [x] x))
+
+; if value is nil assign default
+(def! default (fn* [val def]
+    (if (nil? val) def val)      
+))
+
+; Simple if with implict do, no else clause
+(defmacro! when (fn* [test & body]
+  (list 'if test (cons 'do body))
+))
+
+; For loop.
+;
+;    (let* [i 0]
+;        (for (< i 10)
+;           (println i)
+;           (def! i (+ i 1))
+;        )
+;    )
+;
+(defmacro! for (fn* [test & body]
+    `(while ~test
+	     (do ~@body nil)
+	 )
+))
+
+; Useful predicates
+(def! second (fn* [lst]
+    (nth lst 1)
+))
+
+(def! third (fn* [lst]
+    (nth lst 2)
+))
+
+(def! last (fn* [lst]
+    (nth lst (- (count lst) 1))
+))
+
+(def! notempty? (fn* [lst]
+    (not (empty? lst))
+))
+
+(def! noteq (fn* [a b]
+    (not (= a b))
+))
+
+(def! eq (fn* [a b]
+    (= a b)
+))
+
+(def! nil? (fn* [a]
+    (= a nil)
+))
+
+(def! notnil? (fn* [a]
+    (not (nil? a))
+))
+
+(def! even? (fn* [x]
+    (= (mod x 2) 0)
+))
+
+(def! odd? (fn* [x]
+    (not (even? x))
+))
+
+; Increment a number, list or vector
+(def! inc (fn* [x]
+    (cond
+        (list?   x)
+	    (map (fn* [y] (+ 1 y)), x)
+	    
+	(vector? x)
+	    (vec (map (fn* [y] (+ 1 y)), x))
+	  
+        (number? x)
+	    (+ 1 x)
+
+	:else
+            (throw "inc: arg0 must be list, vector or number")
+        )
+    
+))
+
+; ditto decrement
+(def! dec (fn* [x]
+    (cond
+        (list?   x)
+	    (map (fn* [y] (- y 1)), x)
+	    
+	(vector? x)
+	    (vec (map (fn* [y] (- y 1)), x))
+	  
+        (number? x)
+	    (- x 1)
+
+	:else
+            (throw "dec: arg0 must be list, vector or number")
+        )
+))
+
+
+; List primitives required for destructuring, additionals in lists.mal
+
+; special range for destructuring code locate here, more general version in lists
+(def! __range__ (fn* [n step start]
+    (let* [res ()]
+        (do
+            (for (< start n)
+                (def! res (concat res start))
+                (def! start (+ start step))
+            )
+            res
+        )
+    )
+))
+
+(def! partition (fn* [& args]
+    (let* [ n    (first args) 
+            l    (second args) ]
+        (map (fn* [s] (map (fn* [i] (nth l i)) (__range__(+ n s) 1 s))) (__range__ (count l) n 0))
+    )    
+))
+
+(def! map-indexed (fn* [f coll]
+    (let* [ i   (atom 0) ]
+        (map (fn* [e] (let* [res (f @i (nth coll @i))] (do (swap! i inc) res))) coll)
+    )
+))
+
+
+; Destructuring modelled after a great medium.com post by Mark Woodworth.
+
+; Destructure nested sequential bindings and values
+;
+;   (def! center [4 5])
+;   (destructure-sequential [name [px py] radius] ["circle1" center 10]) 
+;
+;   ==> [name "circle1" px 4 py 5 radius 10]
+;
+(def! destructure-sequential (fn* [bindings values]
+    (apply concat (map-indexed 
+        (fn* [idx elem] 
+             (if (sequential? elem)
+                 (destructure-sequential elem `(nth ~values ~idx nil))
+                 (vector elem `(nth ~values ~idx nil))
+             )
+        )
+        bindings)
+    )
+))
+
+; Dispatch for sequential or associative destructuring
+(def! destructure (fn* [bindings values]
+  (when bindings
+    (cond (sequential? bindings)
+          (destructure-sequential bindings values)
+
+          (map? bindings)
+          (throw "destructure: Associative destructuring not yet implemented")
+          
+          :else
+          [bindings values])))
+)
+
+; Destructuring let* with implicit do
+;
+; (def! point [2 3])
+; (def! point3d [5 6 10])
+;
+; (let*+ [ [px py] point [cx cy cz] point3d ]
+;      (println px py cx cy cz)
+; )   
+; ==> 2 3 5 6 10
+;
+(defmacro! let*+ (fn* [binding-vector & body]
+    (apply list
+         'let*
+         
+          (apply concat (map (fn* [bindings] (destructure (first bindings) (second bindings))) (partition 2 binding-vector)))
+          
+          (list `(do ~@body))
+    )
+))
+
+
+
+; serialization.mal - Serialize and deserialize data structures
+
+; Add a variables/objects serialized value to a map for writing to a file
+(defmacro! serialize-add (fn* [container obj objname] 
+    (list 'assoc container objname (list 'str "'" (list 'pr-str obj)))
+))
+
+; Write a collection of serialized variables to a file
+(def! serialize-write (fn* [path container]
+    (spit path (pr-str container))
+))
+
+; Read a collection of serialized variables from a file, use -realize to restore individual values
+(def! serialize-read (fn* [path]
+    (if (fileexists? path)
+        (eval (read-string (slurp path)))
+
+        (throw (str "serialize-read: no such file '" path "'"))
+    )
+))
+
+; Return the value of a serialized variable
+(def! serialize-realize (fn* [container varname]
+    (if (contains? container varname)
+        (eval (read-string (get container varname)))
+    
+        (throw (str "serialize-realize: no such variable '" varname "' in container"))
+    )
+))
+

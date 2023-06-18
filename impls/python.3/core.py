@@ -1,4 +1,5 @@
 
+import math
 import time
 import reader
 import printer
@@ -194,12 +195,23 @@ def i_count(a):
     else:
         return lisp.LispNumber(0)
 
-def i_nth(alist, idx):
-    if (lisp.isListLike(alist) and lisp.isNumber(idx) and idx.value() < len(alist.value())):
-        return alist.value()[idx.value()]
-    else:
-        raise Exception("nth: index out of range")
+def i_nth(*args):
 
+    if (len(args) < 2):
+        raise Exception("nth: requires list and index, optional sentinal upon index error")
+    if (lisp.isListLike(args[0])):
+        alist = args[0].value()
+    if (lisp.isNumber(args[1])):
+        idx = args[1].value()
+        
+    if (idx < len(alist)):
+        return alist[idx] 
+    else:
+        if (len(args) == 3):
+            return args[2]
+        else:
+            raise Exception("nth: index out of range")
+    
 def i_first(alist):
     if (lisp.isNil(alist)):
         return lisp.LispNil(None)
@@ -289,6 +301,30 @@ def i_mult(a, b):
 def i_div(a, b):
     return lisp.LispNumber(a.value() / b.value())
 
+def i_sqrt(a):
+    return lisp.LispNumber(math.sqrt(a.value()))
+
+def i_pow(b, e):
+    return lisp.LispNumber(b.value() ** e.value())
+
+def i_int(a):
+    return lisp.LispNumber(int(a.value()))
+
+def i_float(a):
+    return lisp.LispNumber(float(a.value()))
+
+def i_mod(a, b):
+    return lisp.LispNumber(a.value() % b.value())
+
+def i_log(a):
+    return (lisp.LispNumber(math.log(a.value())))
+
+def i_exp(a):
+    return (lisp.LispNumber(math.exp(a.value())))
+            
+def i_log10(a):
+    return (lisp.LispNumber(math.log10(a.value())))
+            
 def i_equal(a, b):
     if (lisp.isListLike(a) and lisp.isListLike(b)):
         if (len(a.value()) == len(b.value())):
@@ -499,7 +535,7 @@ def i_with_meta(v, vmeta):
         newl.meta = vmeta
         return newl
     elif (lisp.isFunction(v)):
-        newf = copy.deepcopy(v)
+        newf = copydeepcopy(v)
         newf.meta = vmeta
         return newf
     else:
@@ -511,12 +547,41 @@ def i_time_ms():
         epoch_time = int(time.time())
         return lisp.LispNumber(epoch_time)
         
+def i_sort(l, options):
+    if (not lisp.isListLike(l)):
+        raise Exception("sort: arg0 not a list, vector")
+    if (not (lisp.isNil(options) or lisp.LispHashMap(options))):
+        raise Exception("sort: arg1 must be nil or a hash-map of options (:reverse :nth)")
+
+    if (lisp.isNil(options) or options.value() == {}):
+        return lisp.LispList(sorted(l.value(), key = lambda x: x.value()))
+    else:
+        optmap = options.value()
+        rev = False
+        nth = 0
+        if (lisp.UNIKORN + "reverse" in  optmap):
+            rev = optmap[lisp.UNIKORN + "reverse"].value()
+            
+        if (lisp.UNIKORN + "nth" in optmap):
+            nth = optmap[lisp.UNIKORN + "nth"].value()
+            return lisp.LispList(sorted(l.value(), key = lambda x: x.value()[nth].value(), reverse = rev)) 
+        else:
+            return lisp.LispList(sorted(l.value(), key = lambda x: x.value(), reverse = rev)) 
+
 # Table of intrinsic built in functions
 ns = {
     "+"        : lisp.LispFunction(i_add),
     "-"        : lisp.LispFunction(i_sub),
     "*"        : lisp.LispFunction(i_mult),
     "/"        : lisp.LispFunction(i_div),
+    "sqrt"     : lisp.LispFunction(i_sqrt),
+    "pow"      : lisp.LispFunction(i_pow),
+    "int"      : lisp.LispFunction(i_int),
+    "float"    : lisp.LispFunction(i_float),
+    "mod"      : lisp.LispFunction(i_mod),
+    "log"      : lisp.LispFunction(i_log),
+    "exp"      : lisp.LispFunction(i_exp),
+    "log10"    : lisp.LispFunction(i_log10),
     "="        : lisp.LispFunction(i_equal),
     "<"        : lisp.LispFunction(i_less),
     ">"        : lisp.LispFunction(i_greater),
@@ -572,6 +637,7 @@ ns = {
     "meta"     : lisp.LispFunction(i_meta),
     "with-meta": lisp.LispFunction(i_with_meta),
     "time-ms"  : lisp.LispFunction(i_time_ms),
+    "sort"     : lisp.LispFunction(i_sort),
     "trace"    : lisp.LispFunction(i_trace),
     "pyblock!" : lisp.LispFunction(i_pyDo),
     "pyexpr!"  : lisp.LispFunction(i_pyGet),
