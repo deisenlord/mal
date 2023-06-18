@@ -20,6 +20,6 @@ mal: mal.pyz
 
 install:
 	sudo cp mal /usr/local/bin
-	sudo cp bootstrap.mal core.mal lists.mal /usr/local/lib/mal
+	sudo cp bootstrap.mal core.mal lists.mal stats.mal csv.mal sets.mal vec.mal  /usr/local/lib/mal
 clean:
 	rm -f mal.pyz mal
