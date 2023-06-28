@@ -535,7 +535,7 @@ def i_with_meta(v, vmeta):
         newl.meta = vmeta
         return newl
     elif (lisp.isFunction(v)):
-        newf = copydeepcopy(v)
+        newf = v._copy()
         newf.meta = vmeta
         return newf
     else:

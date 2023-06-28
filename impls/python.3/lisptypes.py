@@ -2,6 +2,7 @@
 # Cribbed, not sure why keywords need a unicode prefix.
 UNIKORN = "\u029e"
 
+import copy
 import env as lispenv
 import printer
 import time
@@ -127,7 +128,7 @@ class LispHashMap(LispTypes):
     def typestr(self): return "hashmap"
 
 class LispNumber(LispTypes):
-    def typestr() :return "number"
+    def typestr(self) :return "number"
 
 class LispSymbol(LispTypes):
     def typestr(self): return "symbol"
@@ -166,6 +167,16 @@ class LispFunction(LispTypes):
         self.tracename = ""
         self.tlevel = 0
 
+    def _copy(self):
+        cp = LispFunction(copy.deepcopy(self.val))
+        cp.dummys = self.dummys[:]
+        cp.outer = self.outer
+        cp.intrinsic = self.intrinsic
+        cp.isMacro = self.isMacro
+        cp.meta = copy.deepcopy(self.meta)
+
+        return cp
+        
     def typestr(self):
         if (self.intrinsic):
             return "builtin function"

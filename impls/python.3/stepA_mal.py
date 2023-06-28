@@ -56,7 +56,6 @@ def macroexpand(tree, env):
 
 # REP
 # (R)ead (E)val (P)rint
-
 def READ(instr):
     return reader.read_str(instr)
 
@@ -116,7 +115,7 @@ def EVAL(tree, env):
             val = EVAL(tree.third(), env)
             newval = val
             if (lisp.isFunction(val)):
-                newval = copy.deepcopy(val)
+                newval = val._copy()
                 newval.isMacro = True
             else:
                 raise Exception("defmacro!: second argument not a function")
@@ -343,6 +342,7 @@ def i_nsalias(orig, alias):
     
     nsalias.create(orig.value(), alias.value())
     return lisp.LispNil(None)
+
 
 def i_nsall():
     repl_env.nsprint()

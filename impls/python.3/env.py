@@ -98,7 +98,7 @@ class Environments:
         if (map):
             print("NS(" + ns + "):")
             for (key, val) in map.items():
-                if (key): print(key + " : " + val.typestr())
+                if (key): print(key + " : \t" + val.typestr())
 
 
 # Global Namespace aliases
