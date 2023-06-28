@@ -11,6 +11,9 @@ import core
 
 sys.setrecursionlimit(8000)
 
+# namespace stack
+nsstack = []
+
 # Quoting support
 def quasiquote(tree):
     if (lisp.isList(tree) and tree.count() == 0):
@@ -105,8 +108,10 @@ def EVAL(tree, env):
             ns = tree.second()
             if (lisp.isSymbol(ns)):
                 nsenv = lispenv.Environments(env, ns = ns.value())
+                nsstack.append(nsenv)
                 ev = eval_ast(lisp.LispList(tree.rest(2)), nsenv)
                 env.nsinstall(nsenv)
+                nsstack.pop()
                 return lisp.LispNil(None)
             else:
                 raise Exception("ns: arg0 must be a symbol")       
@@ -252,9 +257,7 @@ def rep(instr, env):
 
 # Root environment
 repl_env = lispenv.Environments(None, ns = "user")
-
-# Alias map for namespace aliases via nsalias
-nsalias = lispenv.globalAliases
+nsstack.append(repl_env)
 
 #
 # Lisp intrinsics requiring EVAL, otherwise would be in core.py
@@ -339,8 +342,10 @@ def i_nsalias(orig, alias):
         raise Exception("ns-alias: arg0 (orig) not a symbol")
     if (not lisp.isSymbol(alias)):
         raise Exception("ns-alias: arg1 (alias) not a symbol")
+
+    ev = nsstack[-1]
+    ev.aliases.create(orig.value(), alias.value())
     
-    nsalias.create(orig.value(), alias.value())
     return lisp.LispNil(None)
 
 
@@ -358,8 +363,19 @@ def i_nsdir(*args):
     repl_env.nsdir(ns)
     return lisp.LispNil(None)
 
-def i_printaliases():
-    nsalias.dump()
+def i_printaliases(*args):
+    ns = "user"
+    if (len(args) == 1 and lisp.isSymbol(args[0])):
+        ns = args[0].value()
+    elif (len(args) != 0):
+        raise Exception("ns-aliases: takes zero or one namespace symbol")
+
+    if (ns == "user"):
+        repl_env.aliases.dump()
+    else:
+        ev = repl_env.nslist[ns]
+        ev.aliases.dump()
+    
     return lisp.LispNil(None)
 
 # Add evil and swap to envronment
