@@ -76,6 +76,8 @@ def nsfixup(body, env):
     for e in body.value():
         if (lisp.isSymbol(e) and env.find(env.qualify(e.value())) != None):
             e.setvalue(env.qualify(e.value()))
+        elif (lisp.isSymbol(e) and "/" in e.value() and env.aliases.alias(e.value()) != e.value()):
+            e.setvalue(env.aliases.alias(e.value()))
         elif (lisp.isListLike(e)):
             nsfixup(e, env)
 

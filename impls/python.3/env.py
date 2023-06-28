@@ -35,8 +35,8 @@ class Environments:
         self.data = {}
         self.nsname = ns
         self.nslist = {}
-        
-        self.aliases = Aliases("temp" if ns == '' else ns)
+        self.aliases = Aliases(ns)
+
         for idx in range(len(binds)):
             if (binds[idx] == "&"):
                 self.set(binds[idx+1], lisp.LispList(exprs[idx:]))
@@ -45,7 +45,7 @@ class Environments:
                 self.set(binds[idx], exprs[idx])
 
     def qualify(self, name):
-        if (self.nsname != 'user' and "/" not in name):
+        if (self.nsname != '' and self.nsname != 'user' and "/" not in name):
             return self.nsname + "/" + name
         else:
             return name
@@ -67,7 +67,7 @@ class Environments:
              
     def get(self, key):
         key = self.aliases.alias(key)
-        if (self.nsname != 'user' and "/" not in key):
+        if (self.nsname != '' and self.nsname != 'user' and "/" not in key):
             ev = self.find(self.qualify(key))
             if (ev):
                 return ev._get(self.qualify(key))
