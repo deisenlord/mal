@@ -10,6 +10,18 @@ import os.path
 
 # Intrinsics
 
+def i_format(arg, fmt):
+    if (not lisp.isString(fmt)):
+        raise Exception("format: format argument must be a string")
+    if (lisp.isListLike(arg)):
+        s = []
+        for v in arg.value():
+            s.append(lisp.LispString(format(v.value(), fmt.value())))
+        return lisp.LispList(s)
+    else:
+        s = format(arg.value(), fmt.value())
+        return lisp.LispString(s)       
+        
 def i_fileExists(path):
     if (lisp.isString(path)):
         return lisp.LispBoolean(os.path.isfile(path.value()))
@@ -191,6 +203,8 @@ def i_count(a):
     if (lisp.isListLike(a)):
         return lisp.LispNumber(len(a.value()))
     elif lisp.isHashMap(a):
+        return lisp.LispNumber(len(a.value()))
+    elif lisp.isString(a):
         return lisp.LispNumber(len(a.value()))
     else:
         return lisp.LispNumber(0)
@@ -641,6 +655,7 @@ ns = {
     "trace"    : lisp.LispFunction(i_trace),
     "pyblock!" : lisp.LispFunction(i_pyDo),
     "pyexpr!"  : lisp.LispFunction(i_pyGet),
+    "format"   : lisp.LispFunction(i_format),
     "fileexists?" : lisp.LispFunction(i_fileExists),
     "sequential?" : lisp.LispFunction(i_isSequential),
     "read-string" : lisp.LispFunction(i_readstring)
