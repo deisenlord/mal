@@ -47,10 +47,12 @@ def pr_str(tree, readable = True):
         for k, v in tree.value().items():
             if (not first):
                 s = s + " "
-            if (k[0] == lisp.UNIKORN):
+            if (isinstance(k, str) and k[0] == lisp.UNIKORN):
                 s = s +  ":" + k[1:]
+            elif (isinstance(k, int) or isinstance(k, float)):
+                s = s + str(k)
             else:
-                s = s + '"' + k + '"'
+                s = s + '"' + k  + '"'
             s = s + " "
             s = s + pr_str(v, readable)
             first = False

@@ -8,6 +8,10 @@
     (if (nil? val) def val)      
 ))
 
+(def! log2 (fn* [v]
+    (/ (log10 v) (log10 2))
+))
+
 ; Simple if with implict do, no else clause
 (defmacro! when (fn* [test & body]
   (list 'if test (cons 'do body))

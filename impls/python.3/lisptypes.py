@@ -166,6 +166,7 @@ class LispFunction(LispTypes):
         self.trace = False
         self.tracename = ""
         self.tlevel = 0
+        self.name = ""
 
     def _copy(self):
         cp = LispFunction(copy.deepcopy(self.val))
@@ -233,4 +234,30 @@ def Py2Lisp(pyobj):
     elif (type(pyobj) == time.struct_time):
         return LispNumber(time.mktime(pyobj))
     else:
-        raise Exception("pyget! : Unsupported python type " + str(type(pyobj)))
+        raise Exception("mal: Unsupported python type " + str(type(pyobj)) + " in conversion")
+
+# MAL type to python type
+def Lisp2Py(lobj):
+    if (isListLike(lobj)):
+        return [Lisp2Py(o) for o in lobj.value()]
+    elif (isHashMap(lobj)):
+        hm = {}
+        for k in lobj.value().keys():
+            if (isinstance(k, str) and k[0] == UNIKORN):
+                ks = k[1:]
+            else:
+                ks = k
+            hm[ks] = Lisp2Py(lobj.value()[k])
+        return hm
+    elif (isNumber(lobj)):
+        return lobj.value()
+    elif (isKeyword(lobj)):
+        return printer.pr_str(lobj)
+    elif (isString(lobj)):
+        return lobj.value()
+    elif (isNil(lobj)):
+        return None
+    elif (isBoolean(lobj)):
+        return lobj.value()
+    else:
+        raise Exception("mal: Unsupported MAL type " + lobj.typesstr() + " in conversion")

@@ -42,6 +42,17 @@
     )
 ))
 
+; flatten
+(def! flatten (fn* [lst]
+    (let* [pass1 (apply concat () lst)
+           pass2 (apply concat () pass1)]
+	   (if (not (= pass1 pass2))
+	       (flatten pass1)
+	       pass1
+	   )
+    )    
+))
+
 (def! unique (fn* [l]
     (vals (lists/reduce (fn* [res el] (if (contains? res (str el)) res (conj res (hash-map (str el) el)))) {} l))
 ))

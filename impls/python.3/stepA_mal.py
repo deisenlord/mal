@@ -9,7 +9,7 @@ import lisp_input
 import env as lispenv
 import core
 
-sys.setrecursionlimit(8000)
+sys.setrecursionlimit(1000000)
 
 # namespace stack
 nsstack = []
@@ -105,6 +105,7 @@ def EVAL(tree, env):
             env.set(env.qualify(key), val)
             if (lisp.isSymbol(val) or (lisp.isFunction(val) and not val.intrinsic)):
                 nsfixup(val.val, env)
+                val.name = key
             return val
         elif (lisp.isSymbol(arg1) and arg1.value() == "ns"):
             ns = tree.second()
@@ -396,7 +397,9 @@ repl_env.set("ns-aliases", lisp.LispFunction(i_printaliases))
 
 # Built in intrinsic functions
 for funcsym in core.ns:
-    repl_env.set(funcsym, core.ns[funcsym])
+    f = core.ns[funcsym]
+    f.name = funcsym
+    repl_env.set(funcsym, f)
 
 # Built-in variables*
 repl_env.set("*ARGV*", lisp.LispList([]))

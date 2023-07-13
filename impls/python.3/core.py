@@ -10,6 +10,47 @@ import os.path
 
 # Intrinsics
 
+def i_max(*args):
+    n = len(args)
+    if (n < 2):
+        raise Exception("max: requires 2 or more arguments")
+
+    __m = args[0]
+    if (not lisp.isNumber(__m)):
+        raise Exception("max: arguments must be numeric")
+
+    __m = __m.value()
+    
+    for v in args[1:]:
+        __m = max(__m, v.value())
+
+    return lisp.LispNumber(__m)
+
+def i_min(*args):
+    n = len(args)
+    if (n < 2):
+        raise Exception("min: requires 2 or more arguments")
+
+    __m = args[0]
+    if (not lisp.isNumber(__m)):
+        raise Exception("min: arguments must be numeric")
+
+    __m = __m.value()
+    
+    for v in args[1:]:
+        __m = min(__m, v.value())
+
+    return lisp.LispNumber(__m)
+
+def i_fn_name(f):
+    if (not lisp.isFunction(f)):
+        raise Exception("fn-name: argument must be a function")
+
+    if (len(f.name) == 0):
+        return lisp.LispString(printer.pr_str(f))
+    else:
+        return lisp.LispString(f.name)
+    
 def i_format(arg, fmt):
     if (not lisp.isString(fmt)):
         raise Exception("format: format argument must be a string")
@@ -43,7 +84,7 @@ def i_pyDo(str):
     if (lisp.isString(str)):
         exec(compile(str.value(), "code", "exec"), globals())
     else:
-        raise Exception("pydo!: arg0 must be string")
+        raise Exception("pyblock!: arg0 must be string")
 
     return lisp.LispNil(None)
 
@@ -51,8 +92,24 @@ def i_pyGet(str):
     if (lisp.isString(str)):
         return lisp.Py2Lisp(eval(str.value()))
     else:
-        raise Exception("pyget!: arg0 must be string")
-    
+        raise Exception("pyexpr!: arg0 must be string")
+
+def i_pyCall(fn, args):
+    if (not lisp.isString(fn)):
+         raise Exception("pycall!: arg0 must be string")
+    if (not lisp.isHashMap(args)):
+         raise Exception("pycall!: arg1 must be a hashmap of arguments")
+     
+    f = globals()[fn.value()]
+
+    if (f == None):
+         raise Exception("pycall!: could not find function {}".format(fn.value()))         
+
+    d = lisp.Lisp2Py(args)
+    r = f(**d)
+    return (lisp.Py2Lisp(r))
+
+
 def i_isList(a):
     if (lisp.isList(a)):
         return lisp.LispBoolean(True)
@@ -97,6 +154,18 @@ def i_isNumber(a):
     else:
         return lisp.LispBoolean(False)
 
+def i_isInt(a):
+    if (lisp.isNumber(a) and isinstance(a.value(), int)):
+        return lisp.LispBoolean(True)
+    else:
+        return lisp.LispBoolean(False)
+
+def i_isFloat(a):
+    if (lisp.isNumber(a) and isinstance(a.value(), float)):
+        return lisp.LispBoolean(True)
+    else:
+        return lisp.LispBoolean(False)
+    
 def i_mkList(*args):
     return lisp.LispList([arg for arg in args]) 
 
@@ -110,8 +179,8 @@ def i_mkHashMap(*args):
         if (len(keys) != len(values)):
             raise Exception("hash-map: unbalanced keys and values")
         for k in keys:
-            if (not isinstance(k, lisp.LispString)):
-                raise Exception("hashmap: keys can only be strings or :keywords")
+            if (not (isinstance(k, lisp.LispString) or isinstance(k, lisp.LispNumber))):
+                raise Exception("hashmap: keys can only be strings, :keywords or numbers")
         for idx, k in enumerate(keys):
             dict[k.value()] = values[idx]
         
@@ -129,8 +198,8 @@ def i_assoc (*args):
         raise Exception("assoc: unbalanced key and value arguments")
 
     for k in keys:
-        if (not isinstance(k, lisp.LispString)):
-            raise Exception("assoc: keys can only be strings or :keywords")
+        if (not (isinstance(k, lisp.LispString) or isinstance(k, lisp.LispNumber))):
+            raise Exception("assoc: keys can only be strings, :keywords or numbers")
 
         for idx, k in enumerate(keys):
             map[k.value()] = values[idx]
@@ -145,8 +214,8 @@ def i_disassoc(*args):
     map = args[0].value().copy()
 
     for k in list:
-        if (not lisp.isString(k)):
-            raise Exception("dissoc: keys to remove must be strings or keywords")
+        if (not (lisp.isString(k) or lisp.isNumber(k))):
+            raise Exception("dissoc: keys to remove must be strings, :keywords or numbers")
         if (k.value() in map):
             discard = map.pop(k.value())
         
@@ -157,8 +226,8 @@ def i_get(*args):
         return lisp.LispNil(None)
     if (not lisp.isHashMap(args[0])):
         raise Exception("get: arg0 is not a hash map")
-    if (not lisp.isString(args[1])):
-        raise Exception("get: arg1 is not string or keyword")
+    if (not (lisp.isString(args[1]) or lisp.isNumber(args[1]))):
+        raise Exception("get: arg1 is not string, :keyword or number")
 
     map = args[0].value()
     key = args[1].value()
@@ -171,8 +240,8 @@ def i_get(*args):
 def i_contains(map, k):
     if (not lisp.isHashMap(map)):
         raise Exception("contains?: arg0 is not a hash map")
-    if (not lisp.isString(k)):
-        raise Exception("contains?: arg0 not a string or keyword")
+    if (not (lisp.isString(k) or lisp.isNumber(k))):
+        raise Exception("contains?: arg0 not a string, :keyword or number")
 
     if (k.value() in map.value()):
         return lisp.LispBoolean(True)
@@ -184,7 +253,14 @@ def i_keys(map):
         raise Exception("keys: arg0 is not a hash map")
 
     keys = map.value().keys()
-    return lisp.LispList([lisp.LispString(k) for k in keys])
+    kv = []
+    for k in keys:
+        if (isinstance(k, str)):
+            kv.append(lisp.LispString(k))
+        elif (isinstance(k, int) or isinstance(k, float)):
+            kv.append(lisp.LispNumber(k))
+
+    return lisp.LispList(kv)
 
 def i_values(map):
     if (not lisp.isHashMap(map)):
@@ -331,14 +407,20 @@ def i_mod(a, b):
     return lisp.LispNumber(a.value() % b.value())
 
 def i_log(a):
-    return (lisp.LispNumber(math.log(a.value())))
+    return (lisp.LispNumber(smath.log(a.value())))
 
 def i_exp(a):
     return (lisp.LispNumber(math.exp(a.value())))
             
 def i_log10(a):
     return (lisp.LispNumber(math.log10(a.value())))
-            
+
+def i_ceil(a):
+    return (lisp.LispNumber(math.ceil(a.value())))
+
+def i_floor(a):
+    return (lisp.LispNumber(math.floor(a.value())))
+
 def i_equal(a, b):
     if (lisp.isListLike(a) and lisp.isListLike(b)):
         if (len(a.value()) == len(b.value())):
@@ -582,12 +664,15 @@ def i_sort(l, options):
         else:
             return lisp.LispList(sorted(l.value(), key = lambda x: x.value(), reverse = rev)) 
 
+        
 # Table of intrinsic built in functions
 ns = {
     "+"        : lisp.LispFunction(i_add),
     "-"        : lisp.LispFunction(i_sub),
     "*"        : lisp.LispFunction(i_mult),
     "/"        : lisp.LispFunction(i_div),
+    "max"     : lisp.LispFunction(i_max),
+    "min"     : lisp.LispFunction(i_min),
     "sqrt"     : lisp.LispFunction(i_sqrt),
     "pow"      : lisp.LispFunction(i_pow),
     "int"      : lisp.LispFunction(i_int),
@@ -596,6 +681,8 @@ ns = {
     "log"      : lisp.LispFunction(i_log),
     "exp"      : lisp.LispFunction(i_exp),
     "log10"    : lisp.LispFunction(i_log10),
+    "ceil"     : lisp.LispFunction(i_ceil),
+    "floor"    : lisp.LispFunction(i_floor),
     "="        : lisp.LispFunction(i_equal),
     "<"        : lisp.LispFunction(i_less),
     ">"        : lisp.LispFunction(i_greater),
@@ -621,6 +708,8 @@ ns = {
     "fn?"      : lisp.LispFunction(i_isFunction),
     "string?"  : lisp.LispFunction(i_isString),
     "number?"  : lisp.LispFunction(i_isNumber),
+    "integer?" : lisp.LispFunction(i_isInt),
+    "float?"   : lisp.LispFunction(i_isFloat),
     "macro?"   : lisp.LispFunction(i_isMacro),
     "vec"      : lisp.LispFunction(i_vector),
     "throw"    : lisp.LispFunction(i_throw),
@@ -655,7 +744,9 @@ ns = {
     "trace"    : lisp.LispFunction(i_trace),
     "pyblock!" : lisp.LispFunction(i_pyDo),
     "pyexpr!"  : lisp.LispFunction(i_pyGet),
+    "pycall!"  : lisp.LispFunction(i_pyCall),
     "format"   : lisp.LispFunction(i_format),
+    "fn-name"  : lisp.LispFunction(i_fn_name),
     "fileexists?" : lisp.LispFunction(i_fileExists),
     "sequential?" : lisp.LispFunction(i_isSequential),
     "read-string" : lisp.LispFunction(i_readstring)

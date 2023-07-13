@@ -103,8 +103,8 @@ def read_list_type(rdr, start, end):
         if (len(keys) != len(values)):
             raise Exception("mal: Hashmap unbalanced keys and values")
         for k in keys:
-            if (not isinstance(k, lisp.LispString)):
-                raise Exception("mal: Hash map keys can only be strings or :keywords")
+            if (not (isinstance(k, lisp.LispString) or isinstance(k, lisp.LispNumber))):
+                raise Exception("mal: Hash map keys can only be strings, :keywords or numbers")
         for idx, k in enumerate(keys):
             dict[k.value()] = values[idx]
         

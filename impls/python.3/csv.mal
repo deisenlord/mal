@@ -34,27 +34,27 @@ csvdata = pyreadcsv(\"" filename "\")
 ))
 
 ; Read csv file, attach column headers as map to column index in meta
-(defmacro! read-csv (fn* [filename & options]
-    `(let* [ opt    (apply hash-map '~options)
+(def! read-csv (fn* [filename & options]
+    (let* [ opt    (apply hash-map options)
 	     head   (if (contains? opt :header) 1 0)
-         cols   (if (contains? opt :float-columns) (str "[" (join "," (get opt :float-columns)) "]") "[]")
+             cols   (if (contains? opt :float-columns) (str "[" (join "," (get opt :float-columns)) "]") "[]")
 	     header ()
-         data   () ]
+             data   () ]
          (do
-             (pyblock! (_csv-pycode ~filename head cols))
+             (pyblock! (_csv-pycode filename head cols))
              (def! data (pyexpr! "csvdata"))
 	         ; if there is a header attach a map between column name and nth
 	         (if (= head 1)
 	            (do
 	               (def! header (first data))
-		           (def! header (apply conj (map 
-                       (let* [col (atom -1)] (fn* [e] (do (swap! col + 1) (hash-map (keyword e) (deref col))))) header))
-                   )
-		           (with-meta (rest data) header)
-		        )
+		       (def! header (apply conj (map 
+                           (let* [col (atom -1)] (fn* [e] (do (swap! col + 1) (hash-map (keyword e) (deref col))))) header))
+                       )
+		       (with-meta (rest data) header)
+		    )
 	            (with-meta data header)
 	         )
-	     )
+	 )
      )
 ))
 

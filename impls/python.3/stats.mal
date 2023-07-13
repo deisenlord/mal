@@ -8,16 +8,20 @@
     (lists/reduce + 0 l)
 ))
 
-(def! _max (fn* [& l] (lists/reduce (fn* [acc x] (if (> x acc) x  acc)) (first l) l)))
-
-(def! max (fn* [l]
-    (apply _max l)
+(def! cumsum (fn* [l]
+    (let*+ [ csum (atom 0)
+             res  (atom ()) ]
+        (map (fn* [e] (do (swap! res concat (+ e @csum)) (swap! csum + e))) l)  
+        @res
+    )
 ))
 
-(def! _min (fn* [& l] (lists/reduce (fn* [acc x] (if (< x acc) x  acc)) (first l) l)))
+(def! maxseq (fn* [l]
+    (apply max l)
+))
 
-(def! min (fn* [l]
-    (apply _min l)
+(def! minseq (fn* [l]
+    (apply min l)
 ))
 
 (def! minloc (fn* [l]
@@ -61,6 +65,30 @@
     )
 ))
 
+; R method, include median in both halves on even n
+(def! iqr (fn* [l]
+    (let*+ [ sorted (sort l {})
+            n       (count l)
+	    mid     (int (/ n 2))
+	    mid     (if (odd? n) (+ mid 1) mid)
+	    q1      0
+	    q3      0 ]
+
+            (if (odd? n)
+	        (do
+	            (def! q1 (median (map (fn* [i] (nth sorted i)) (lists/range mid))))
+	            (def! q3 (median (map (fn* [i] (nth sorted i)) (lists/range n 1 (- mid 1)))))
+		)
+		(do
+	            (def! q1 (median (map (fn* [i] (nth sorted i)) (lists/range  mid))))
+	            (def! q3 (median (map (fn* [i] (nth sorted i)) (lists/range n 1 mid))))
+		)
+	    )
+        (- q3 q1)
+    )
+))
+
+
 (def! ssqr (fn* [l]
     (lists/reduce (fn* [acc x] (+ acc (* x x))) 0 l)
 ))
@@ -76,5 +104,19 @@
     (sqrt (variance  l))
 ))
 
+; Freedman-Diaconis rule for number of bins, considers range of data
+(def! histogram (fn* [v]
+    (let*+ [ n        (count v)
+             minv     (stats/minseq v)
+             maxv     (stats/maxseq v)
+             binwidth (/ (* 2 (stats/iqr v)) (pow n (/ 1 3)))
+             nbins    (ceil (/ (- maxv minv) binwidth)) 
+             hist     (apply hash-map (lists/flatten (map (fn* [i] (list i 0)) (lists/range nbins))))
+             ahist    (atom hist) ]
+           
+           (map (fn* [val] (let* [ bin (int (/ val binwidth)) ] (swap! ahist assoc bin (+ (get @ahist bin) 1)))) v)
+           (apply hash-map (lists/interleave (lists/range maxv binwidth minv) (vals @ahist)))
+    )
+))     
 
 )
