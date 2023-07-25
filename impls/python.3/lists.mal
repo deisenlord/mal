@@ -20,6 +20,10 @@
     )
 ))
 
+(def! repeat (fn* [n x]
+    (map (fn* [i] x) (range n))                
+))
+
 (def! take (fn* [n l]
     (map (fn* [i] (nth l i)) (range n))
 ))

@@ -138,7 +138,18 @@
 ))
 
 
+(def! select-keys (fn* [m kv]
+    (let* [ res (atom {}) ]
+        (do
+            (map (fn* [k] (if (contains? m k) (swap! res assoc k (get m k))) nil) kv)
+	    @res
+	)
+    )
+))
+
 ; Destructuring modelled after a great medium.com post by Mark Woodworth.
+
+(def! destructure nil)
 
 ; Destructure nested sequential bindings and values
 ;
@@ -148,16 +159,35 @@
 ;   ==> [name "circle1" px 4 py 5 radius 10]
 ;
 (def! destructure-sequential (fn* [bindings values]
-    (apply concat (map-indexed 
-        (fn* [idx elem] 
-             (if (sequential? elem)
-                 (destructure-sequential elem `(nth ~values ~idx nil))
-                 (vector elem `(nth ~values ~idx nil))
-             )
-        )
-        bindings)
+    (apply concat
+        (map-indexed 
+            (fn* [idx elem] (destructure elem `(nth ~values ~idx nil)))
+	bindings)
     )
 ))
+
+; Destructure associative bindings and values
+;
+;  (destructure-associative {:keys [a c]} {:a 1 :b 2 :c [6 7]})
+;
+;  ==> [a 1 c [6 7]]
+;
+; 
+;  (destructure-associative {:a a :c c} {:a 1 :b 2 :c [6 7]})
+;
+;  ==> [a 1 c [6 7]]
+;
+(def! destructure-associative (fn* [bindings values]
+    (let* [ symbols   (get bindings :keys)
+            bindings  (if (notnil? symbols) (apply hash-map (lists/interleave (map (fn* [bindsym] (keyword (str bindsym))) symbols) symbols)) bindings) ]
+        (apply concat
+            (map
+                (fn* [bv] (let* [sym (second bv) k (first bv)] (destructure sym `(get ~values ~k)))) 
+  	    (partition 2 (lists/interleave (keys bindings) (vals bindings))))
+	)  
+    )
+))
+
 
 ; Dispatch for sequential or associative destructuring
 (def! destructure (fn* [bindings values]
@@ -166,13 +196,16 @@
           (destructure-sequential bindings values)
 
           (map? bindings)
-          (throw "destructure: Associative destructuring not yet implemented")
+          (destructure-associative bindings values)
           
           :else
-          [bindings values])))
-)
+          [bindings values]
+    )
+  )
+))
 
-; Destructuring let* with implicit do
+
+; Destructuring let* with implicit do, sequential and associative
 ;
 ; (def! point [2 3])
 ; (def! point3d [5 6 10])
@@ -181,6 +214,13 @@
 ;      (println px py cx cy cz)
 ; )   
 ; ==> 2 3 5 6 10
+;
+; (def! m {:a 1 :b 2 :c [6 7]})
+; (let*+ [ {:keys [a c d]} m 
+;          {:b b}          m ]
+;     (println a b c d)
+; )
+; ==> 1 2 [6 7] nil
 ;
 (defmacro! let*+ (fn* [binding-vector & body]
     (apply list
@@ -191,7 +231,6 @@
           (list `(do ~@body))
     )
 ))
-
 
 
 ; serialization.mal - Serialize and deserialize data structures
