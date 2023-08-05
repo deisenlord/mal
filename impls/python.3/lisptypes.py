@@ -7,13 +7,19 @@ import env as lispenv
 import printer
 import time
 
+class SourceLocation:
+    def __init__(self, line, source):
+        self.line = line
+        self.source = source
+
 class LispException(Exception):
     def __init__(self, object):
         self.malobject = object
     
 class LispTypes:
-    def __init__(self, val):
+    def __init__(self, val, location = SourceLocation(1, "Unknown")):
         self.val = val
+        self.loc = location
         self.meta = None
         
     def value(self):
@@ -71,19 +77,19 @@ class LispList(LispTypes):
         if (len(self.val) >= 1):
             return self.val[0]
         else:
-            raise Exception("empty list, no first element")
+            raise Exception("first: empty list, no first element")
 
     def second(self):
         if (len(self.val) >= 2):
             return self.val[1]
         else:
-            raise Exception("no second element")
+            raise Exception("second: no second element")
 
     def third(self):
         if (len(self.val) >= 3):
             return self.val[2]
         else:
-            raise Exception("no third element")
+            raise Exception("third: no third element")
 
     def rest(self, start):
         if (len(self.val) >= start+1):
@@ -101,19 +107,19 @@ class LispVector(LispTypes):
         if (len(self.val) >= 1):
             return self.val[0]
         else:
-            raise Exception("empty list, no first element")
+            raise Exception("first: empty vector, no first element")
 
     def second(self):
         if (len(self.val) >= 2):
             return self.val[1]
         else:
-            raise Exception("no second element")
+            raise Exception("second: no second element")
 
     def third(self):
         if (len(self.val) >= 3):
             return self.val[2]
         else:
-            raise Exception("no third element")
+            raise Exception("third: no third element")
 
     def rest(self, start):
         if (len(self.val) >= start+1):

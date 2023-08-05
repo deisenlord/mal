@@ -507,8 +507,8 @@ def i_println(*args):
     print(" ".join(parts))
     return lisp.LispNil(None)
 
-def i_readstring(a):
-    ret = reader.read_str(a.value())
+def i_readstring(a, source):
+    ret = reader.read_str(a.value(), source.value())
     return ret
 
 def i_slurp(fname):
@@ -556,14 +556,14 @@ def i_deref(val):
     if (lisp.isAtom(val)):
         return val.value()
     else:
-        raise Exception("not an Atom")
+        raise Exception("deref[@]: not an Atom")
 
 def i_reset(atom, val):
     if (lisp.isAtom(atom)):
         atom.set(val)
         return atom.value()
     else:
-        raise Exception("not an Atom")
+        raise Exception("reset: not an Atom")
 
 def i_cons(val, alist):
     if (not lisp.isListLike(alist)):

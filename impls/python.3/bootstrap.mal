@@ -59,7 +59,7 @@
 	   path  (find-path fname) ]
         (if (not (nil? path))
 	    (do
-                (eval (read-string (str "(do " (slurp path) "\nnil)")))
+                (eval (read-string (str "(do " (slurp path) "\nnil)") fname))
 	        (if (contains? opt :alias)
 	            (ns-alias ns (get opt :alias))
 	        )

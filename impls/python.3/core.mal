@@ -77,10 +77,10 @@
 (def! inc (fn* [x]
     (cond
         (list?   x)
-	    (map (fn* [y] (+ 1 y)), x)
+	    (map (fn* [y] (+ 1 y)) x)
 	    
 	(vector? x)
-	    (vec (map (fn* [y] (+ 1 y)), x))
+	    (vec (map (fn* [y] (+ 1 y)) x))
 	  
         (number? x)
 	    (+ 1 x)
@@ -95,10 +95,10 @@
 (def! dec (fn* [x]
     (cond
         (list?   x)
-	    (map (fn* [y] (- y 1)), x)
+	    (map (fn* [y] (- y 1)) x)
 	    
 	(vector? x)
-	    (vec (map (fn* [y] (- y 1)), x))
+	    (vec (map (fn* [y] (- y 1)) x))
 	  
         (number? x)
 	    (- x 1)
@@ -248,7 +248,7 @@
 ; Read a collection of serialized variables from a file, use -realize to restore individual values
 (def! serialize-read (fn* [path]
     (if (fileexists? path)
-        (eval (read-string (slurp path)))
+        (eval (read-string (slurp path) path))
 
         (throw (str "serialize-read: no such file '" path "'"))
     )
@@ -257,7 +257,7 @@
 ; Return the value of a serialized variable
 (def! serialize-realize (fn* [container varname]
     (if (contains? container varname)
-        (eval (read-string (get container varname)))
+        (eval (read-string (get container varname) "serialize-realize"))
     
         (throw (str "serialize-realize: no such variable '" varname "' in container"))
     )

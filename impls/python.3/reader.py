@@ -7,10 +7,18 @@ import pdb
 
 class BlankLine(Exception):
     pass
+        
+class Token(str):
+    def __new__(cls, t):
+        instance = super().__new__(cls, t)
+        return instance
+
+    def __init(self):
+        self.loc = lisp.SourceLocation(0, "Unknown") 
 
 class Readers:
     def __init__(self, tokens):
-        self.tokens = tokens    
+        self.tokens = tokens
         self.length = len(tokens)
         self.index = 0
 
@@ -28,8 +36,8 @@ class Readers:
         else:
             return None
 
-def read_str(instr):
-    tokens = tokenize(instr)
+def read_str(instr, source = "Unknown"):
+    tokens = tokenize(instr, source)
     if (len(tokens) == 0):
         raise BlankLine("BlankLine")
     return read_form(Readers(tokens))
@@ -45,25 +53,31 @@ def read_form(rdr):
     elif (rdr.peek() == '{'):
         types = read_hashmap(rdr)
     elif (rdr.peek() == "'"):
+        loc = rdr.peek().loc
         rdr.next()
-        types = lisp.LispList([lisp.LispSymbol("quote"), read_form(rdr)])
+        types = lisp.LispList([lisp.LispSymbol("quote", loc), read_form(rdr)], loc)
     elif (rdr.peek() == "@"):
+        loc = rdr.peek().loc
         rdr.next()
-        types = lisp.LispList([lisp.LispSymbol("deref"), read_form(rdr)])
+        types = lisp.LispList([lisp.LispSymbol("deref", loc), read_form(rdr)], loc)
     elif (rdr.peek() == "^"):
+        loc = rdr.peek().loc
         rdr.next()
         one = read_form(rdr)
         two = read_form(rdr)
-        types = lisp.LispList([lisp.LispSymbol("with-meta"), two, one])
+        types = lisp.LispList([lisp.LispSymbol("with-meta", loc), two, one], loc)
     elif (rdr.peek() == "`"):
+        loc = rdr.peek().loc
         rdr.next()
-        types = lisp.LispList([lisp.LispSymbol("quasiquote"), read_form(rdr)])
-    elif (rdr.peek() == "~"):        
+        types = lisp.LispList([lisp.LispSymbol("quasiquote", loc), read_form(rdr)], loc)
+    elif (rdr.peek() == "~"):
+        loc = rdr.peek().loc
         rdr.next()
-        types = lisp.LispList([lisp.LispSymbol("unquote"), read_form(rdr)])
+        types = lisp.LispList([lisp.LispSymbol("unquote", loc), read_form(rdr)], loc)
     elif (rdr.peek() == "~@"):
+        loc = rdr.peek().loc
         rdr.next()
-        types = lisp.LispList([lisp.LispSymbol("splice-unquote"), read_form(rdr)])
+        types = lisp.LispList([lisp.LispSymbol("splice-unquote", loc), read_form(rdr)], loc)
     else:
         types = read_atom(rdr)
 
@@ -83,6 +97,9 @@ def read_list_type(rdr, start, end):
     tok = rdr.next()
     if (tok != start): raise Exception("mal: expected starting '" + start + "'")
 
+    # tag line number of list types as start of list
+    loc = tok.loc
+    
     tok = rdr.peek()
     while (tok != end):
         if (not tok):
@@ -93,9 +110,9 @@ def read_list_type(rdr, start, end):
 
     rdr.next()
     if (start == '('):
-        return lisp.LispList(types)
+        return lisp.LispList(types, loc)
     elif (start == '['):
-        return lisp.LispVector(types)
+        return lisp.LispVector(types, loc)
     elif (start == '{'):
         dict = {}
         keys = types[::2]
@@ -108,7 +125,7 @@ def read_list_type(rdr, start, end):
         for idx, k in enumerate(keys):
             dict[k.value()] = values[idx]
         
-        return lisp.LispHashMap(dict)
+        return lisp.LispHashMap(dict, loc)
     else:
         raise Exception("mal: Unkown list starting type: ", start)
 
@@ -127,27 +144,67 @@ def read_atom(rdr):
         return None
     elif (int_re.match(tok)):
         num = int(tok)
-        val = lisp.LispNumber(num)
+        val = lisp.LispNumber(num, tok.loc)
     elif (float_re.match(tok)):
         num = float(tok)
-        val = lisp.LispNumber(num)
+        val = lisp.LispNumber(num, tok.loc)
     elif (tok == "nil"):
-        val = lisp.LispNil(None)
+        val = lisp.LispNil(None, tok.loc)
     elif (tok == "true"):
-        val = lisp.LispBoolean(True)
+        val = lisp.LispBoolean(True, tok.loc)
     elif (tok == "false"):
-        val = lisp.LispBoolean(False)
+        val = lisp.LispBoolean(False, tok.loc)
     elif (str_re.match(tok)):
-        val = lisp.LispString(unescape(tok[1:-1])) 
+        val = lisp.LispString(unescape(tok[1:-1]), tok.loc) 
     elif (tok[0] == '"'):
         raise Exception("mal: unbalanced quotes")
     elif (tok[0] == ':'):
-        val = lisp.LispString(lisp.UNIKORN + tok[1:])
+        val = lisp.LispString(lisp.UNIKORN + tok[1:], tok.loc)
     else:
-        val = lisp.LispSymbol(tok)
+        val = lisp.LispSymbol(tok, tok.loc)
     return val
 
-def tokenize(str):
-    tre = re.compile(r"""[\s,]*(~@|[\[\]{}()'`~^@]|"(?:[\\].|[^\\"])*"?|;.*|[^\s\[\]{}()'"`@,;]+)""");
-    toks = [t for t in re.findall(tre, str) if t[0] != ';']
+# Stolen from a ideaman42 post on stackoverflow
+def finditer_with_line_numbers(pattern, string, flags=0):
+
+    matches = list(re.finditer(pattern, string, flags))
+    if not matches:
+        return []
+
+    end = matches[-1].start()
+    # -1 so a failed 'rfind' maps to the first line.
+    newline_table = {-1: 0}
+    for i, m in enumerate(re.finditer('\\n', string), 1):
+        # Don't find newlines past our last match.
+        offset = m.start()
+        if offset > end:
+            break
+        newline_table[offset] = i
+
+    # Failing to find the newline is OK, -1 maps to 0.
+    for m in matches:
+        newline_offset = string.rfind('\n', 0, m.start())
+        line_number = newline_table[newline_offset]
+        yield (m.group(0), line_number)
+
+
+
+def tokenize(str, source):
+    pat = r"""[\s,]*(~@|[\[\]{}()'`~^@]|"(?:[\\].|[^\\"])*"?|;.*|[^\s\[\]{}()'"`@,;]+)"""
+    pairs = finditer_with_line_numbers(pat, str)
+
+    toks = []
+    for m in pairs:
+            t = Token(m[0].strip())
+            
+            if (t[0] != ';'):
+                location = lisp.SourceLocation(m[1], source)
+                t.loc = location
+                toks.append(t)
+            
     return toks
+
+#def tokenize(str):
+#    tre = re.compile(r"""[\s,]*(~@|[\[\]{}()'`~^@]|"(?:[\\].|[^\\"])*"?|;.*|[^\s\[\]{}()'"`@,;]+)""")
+#    toks = [t for t in re.findall(tre, str) if t[0] != ';']
+#    return toks

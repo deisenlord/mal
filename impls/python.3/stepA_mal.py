@@ -14,6 +14,8 @@ sys.setrecursionlimit(1000000)
 # namespace stack
 nsstack = []
 
+currloc = lisp.SourceLocation(42, "unknown")
+
 # Quoting support
 def quasiquote(tree):
     if (lisp.isList(tree) and tree.count() == 0):
@@ -59,8 +61,8 @@ def macroexpand(tree, env):
 
 # REP
 # (R)ead (E)val (P)rint
-def READ(instr):
-    return reader.read_str(instr)
+def READ(instr, source):
+    return reader.read_str(instr, source)
 
 def PRINT(tree):
     return printer.pr_str(tree)
@@ -82,9 +84,12 @@ def nsfixup(body, env):
             nsfixup(e, env)
 
 def EVAL(tree, env):
+    global currloc
     #print("py(EVAL)", printer.pr_str(tree))
 
     while (True):
+
+        currloc = tree.loc
 
         if (not lisp.isList(tree)):
             return eval_ast(tree, env)
@@ -92,7 +97,7 @@ def EVAL(tree, env):
         if (tree.count() == 0):
             return tree
 
-        # Macro expansion
+            # Macro expansion
         tree = macroexpand(tree, env)
         if (not lisp.isList(tree)):
             return eval_ast(tree, env)
@@ -156,7 +161,7 @@ def EVAL(tree, env):
             return quasiquote(tree.second())
         elif (lisp.isSymbol(arg1) and arg1.value() == "do"):
             ev = eval_ast(lisp.LispList(tree.rest(1)[:-1]), env)
-            
+
             # TCO: return EVAL(tree.value()[-1], env)
             tree = tree.value()[-1]
         elif (lisp.isSymbol(arg1) and arg1.value() == "try*"):
@@ -233,7 +238,11 @@ def EVAL(tree, env):
                 raise Exception("mal:: Expected function, got '" + printer.pr_str(f) + "'")
 
 def eval_ast(ast, env):
+    global currloc
     #print("py(eval_ast)", printer.pr_str(ast))
+
+    currloc = ast.loc
+
     if (lisp.isSymbol(ast)):
         val = env.get(ast.value())
         if (val is None):
@@ -254,8 +263,8 @@ def eval_ast(ast, env):
     else:
         return ast
 
-def rep(instr, env):
-    tree = READ(instr)
+def rep(instr, env, source):
+    tree = READ(instr, source)
     return PRINT(EVAL(tree, env))
 
 # Root environment
@@ -407,12 +416,12 @@ repl_env.set("*host-language*", lisp.LispString("python3 DJE 2023"))
 repl_env.set("*ns*", lisp.LispHashMap({}))
 
 # Built in user defined functions 
-EVAL(READ("(def! not (fn* (a) (if a false true)))"), repl_env)
-EVAL(READ('(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))'), repl_env)
-EVAL(READ("(defmacro! cond (fn* (& xs) (if (> (count xs) 0) (list 'if (first xs) (if (> (count xs) 1) (nth xs 1) (throw \"odd number of forms to cond\")) (cons 'cond (rest (rest xs)))))))"), repl_env)
+EVAL(READ("(def! not (fn* (a) (if a false true)))", "internal-bootstrap"), repl_env)
+EVAL(READ('(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)") f))))', "internal-bootstrap"), repl_env)
+EVAL(READ("(defmacro! cond (fn* (& xs) (if (> (count xs) 0) (list 'if (first xs) (if (> (count xs) 1) (nth xs 1) (throw \"odd number of forms to cond\")) (cons 'cond (rest (rest xs)))))))", "internal-bootstrap"), repl_env)
 
 # Additional bootstrap lisp code
-EVAL(READ('(if (fileexists? "./bootstrap.mal") (load-file "./bootstrap.mal") (load-file "/usr/local/lib/mal/bootstrap.mal"))'), repl_env)
+EVAL(READ('(if (fileexists? "./bootstrap.mal") (load-file "./bootstrap.mal") (load-file "/usr/local/lib/mal/bootstrap.mal"))', "bootstrap.mal"), repl_env)
 
 # Yahoo...
 
@@ -426,15 +435,18 @@ if (len(sys.argv) > 1):
         if (len(argv) > 0):
             repl_env.set("*ARGV*", lisp.LispList(argv))
             
-        rep("(load-file \"{0}\")".format(fname), repl_env)
+        rep("(load-file \"{0}\")".format(fname), repl_env, fname)
         sys.exit(0)
     except Exception as e:
         if (isinstance(e, lisp.LispException)):
             print(printer.pr_str(e.malobject))
+            print(currloc.source + " : " + str(currloc.line + 1))
         else:
             print(e.args[0])
+            print(currloc.source + " : " + str(currloc.line + 1))
+                
 else:
-    rep('(println (str "Mal [" *host-language* "]"))', repl_env)
+    rep('(println (str "Mal [" *host-language* "]"))', repl_env, "internal-bootstrap")
     while (True):
         try:
             instr = lisp_input.readline(repl_env.nsname + "> ")
@@ -443,14 +455,15 @@ else:
             if (instr == None):
                 print("EOF bye")
                 sys.exit(0)
-            print(rep(instr, repl_env))
+            print(rep(instr, repl_env, "stdin"))
         except reader.BlankLine: 
             continue
         except Exception as e:
             if (isinstance(e, lisp.LispException)):
                 print(printer.pr_str(e.malobject))
+                print(currloc.source + " : " + str(currloc.line + 1))
             else:
                 print(e.args[0])
-
+                print(currloc.source + " : " + str(currloc.line + 1))
 
 
