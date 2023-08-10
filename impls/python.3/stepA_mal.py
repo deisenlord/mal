@@ -14,6 +14,7 @@ sys.setrecursionlimit(1000000)
 # namespace stack
 nsstack = []
 
+# Location of current expression 
 currloc = lisp.SourceLocation(42, "unknown")
 
 # Quoting support
@@ -217,7 +218,7 @@ def EVAL(tree, env):
             body = tree.third()
             #if (env.nsname != 'user'):
             #    env = env.outer
-            ret = lisp.LispFunction(body, env, [b.value() for b in dummys], intrinsic = False)
+            ret = lisp.LispFunction(body, env, [b.value() for b in dummys], intrinsic = False, location = arg1.loc)
             return ret
         else:
             v = eval_ast(tree, env)
@@ -439,11 +440,9 @@ if (len(sys.argv) > 1):
         sys.exit(0)
     except Exception as e:
         if (isinstance(e, lisp.LispException)):
-            print(printer.pr_str(e.malobject))
-            print(currloc.source + " : " + str(currloc.line + 1))
+            print(lisp.errmsg(currloc, printer.pr_str(e.malobject)))
         else:
-            print(e.args[0])
-            print(currloc.source + " : " + str(currloc.line + 1))
+            print(lisp.errmsg(loc, e.args[0]))
                 
 else:
     rep('(println (str "Mal [" *host-language* "]"))', repl_env, "internal-bootstrap")
@@ -460,10 +459,9 @@ else:
             continue
         except Exception as e:
             if (isinstance(e, lisp.LispException)):
-                print(printer.pr_str(e.malobject))
-                print(currloc.source + " : " + str(currloc.line + 1))
+                print(lisp.errmsg(currloc, printer.pr_str(e.malobject)))
             else:
-                print(e.args[0])
-                print(currloc.source + " : " + str(currloc.line + 1))
+                print(lisp.errmsg(currloc, e.args[0]))
+                
 
 

@@ -12,6 +12,14 @@ class SourceLocation:
         self.line = line
         self.source = source
 
+def errmsg(loc, msg):
+    src = loc.source
+    i = loc.source.rfind("/")
+    if (i > 0):
+        src = loc.source[i+1:]
+
+    return "[" + src + "(" + str(loc.line) + ")] " + msg
+
 class LispException(Exception):
     def __init__(self, object):
         self.malobject = object
@@ -162,8 +170,9 @@ def trace_return(name, level, ret):
     print(("{0}:" + name + " returned ({1})").format(level-1, printer.pr_str(ret)))
     
 class LispFunction(LispTypes):
-    def __init__(self, val, outer = None, bindvars = [], intrinsic = True, macro = False):
+    def __init__(self, val, outer = None, bindvars = [], intrinsic = True, macro = False, location = SourceLocation(1, "internal-bootstrap")):
         self.val = val
+        self.loc = location
         self.dummys = bindvars
         self.outer = outer
         self.intrinsic = intrinsic
@@ -176,6 +185,7 @@ class LispFunction(LispTypes):
 
     def _copy(self):
         cp = LispFunction(copy.deepcopy(self.val))
+        cp.loc = self.loc
         cp.dummys = self.dummys[:]
         cp.outer = self.outer
         cp.intrinsic = self.intrinsic

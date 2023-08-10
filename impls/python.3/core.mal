@@ -45,6 +45,23 @@
     (nth lst (- (count lst) 1))
 ))
 
+(def! nthrest (fn* [lst n]
+    (let* [ i   n
+            end (count lst)
+	    res [] ]
+	(if (>= i end)
+	    res
+	    (do
+                (for (< i end)
+	            (def! res (concat res (nth lst i)))
+	            (def! i (inc i))
+	        )
+	        res
+	    )
+	)
+    )
+))
+
 (def! notempty? (fn* [lst]
     (not (empty? lst))
 ))
@@ -158,13 +175,34 @@
 ;
 ;   ==> [name "circle1" px 4 py 5 radius 10]
 ;
-(def! destructure-sequential (fn* [bindings values]
+(def! destructure-sequential2 (fn* [bindings values]
     (apply concat
-        (map-indexed 
+        (map-indexed
             (fn* [idx elem] (destructure elem `(nth ~values ~idx nil)))
 	bindings)
     )
 ))
+
+(def! destructure-sequential (fn* [bindings values]
+    (let* [ i   0
+            n   (count bindings)
+	    res (atom []) ]
+	(do
+            (for (< i n)
+                (if (noteq (nth bindings i) '&)
+	           (swap! res concat (destructure (nth bindings i) `(nth ~values ~i nil)))
+		   (do
+		       (swap! res concat (destructure (nth bindings (inc i)) `(nthrest ~values ~i nil)))
+		       (def! i (inc i))
+		   )
+	        )
+                (def! i (inc i))
+            )
+	    @res
+        )
+    )
+))
+
 
 ; Destructure associative bindings and values
 ;

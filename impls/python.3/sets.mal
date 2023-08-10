@@ -10,8 +10,11 @@
 ; create a set from a list. duplicates removed
 (def! set (fn* [listlike]
     (if (sequential? listlike)
-        (apply conj (map (fn* [x] (assoc {} (str x) x)) listlike))
-	(throw "sets/set: argument must be a sequence")
+        (if (empty? listlike)
+	    empty
+            (apply conj (map (fn* [x] (assoc {} (str x) x)) listlike))
+	)
+	(throw "sets/set:  argument must be a sequence")
     )
 ))
 
